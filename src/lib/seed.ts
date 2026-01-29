@@ -114,3 +114,87 @@ export const seedDatabase = async () => {
         alert("Error al poblar la base de datos. Revisa la consola.");
     }
 };
+
+export const createMockSearch = async () => {
+    console.log("Creating Mock Search...");
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        alert("Error: Debes iniciar sesión para crear una búsqueda demo.");
+        return;
+    }
+
+    const userId = user.id;
+    const searchId = `demo_${Date.now()}`;
+
+    try {
+        // 1. Create Search
+        const { error: searchError } = await supabase
+            .from('busquedas')
+            .insert({
+                id_busqueda_n8n: searchId,
+                user_id: userId,
+                titulo: 'DEMO: Frontend Lead (React/Next.js)',
+                estado: 'active'
+            });
+
+        if (searchError) throw searchError;
+
+        // 2. Create Mock Candidates
+        const mockCandidates = [
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Valentina Code',
+                email: 'valentina@demo.com',
+                resumen_ia: 'MATCH: 98%. Perfil ideal. Tech Lead en startup unicornio. Experiencia profunda en arquitectura hexagonal y testing.',
+                comentarios_admin: 'Prioridad alta.',
+                estado_agenda: 'pending'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Diego Dev',
+                email: 'diego@demo.com',
+                resumen_ia: 'MATCH: 85%. Muy buen nivel técnico, pero pide un salario fuera de rango. Evaluar seniority real.',
+                comentarios_admin: '',
+                estado_agenda: 'sent'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Carla Junior',
+                email: 'carla@demo.com',
+                resumen_ia: 'MATCH: 60%. Buenos fundamentos pero poca experiencia liderando equipos. Buen potencial a futuro.',
+                comentarios_admin: 'Keep warm.',
+                estado_agenda: 'contacted'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Pedro Legacy',
+                email: 'pedro@demo.com',
+                resumen_ia: 'MATCH: 30%. Experto en jQuery y PHP antiguo. No encaja con el stack moderno requerido.',
+                comentarios_admin: 'Descartado.',
+                estado_agenda: 'rejected'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Alex Fullstack',
+                email: 'alex@demo.com',
+                resumen_ia: 'MATCH: 92%. Sólido en Back y Front. Puede ser útil para el equipo de plataforma.',
+                comentarios_admin: '',
+                estado_agenda: 'pending'
+            }
+        ];
+
+        const { error: candidatesError } = await supabase
+            .from('postulantes')
+            .insert(mockCandidates);
+
+        if (candidatesError) throw candidatesError;
+
+        return searchId;
+
+    } catch (error) {
+        console.error("Mock Search creation failed:", error);
+        alert("Error creando búsqueda demo.");
+        throw error;
+    }
+};

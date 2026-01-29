@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Plus, Search, Activity, Calendar as CalendarIcon, Database } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { seedDatabase } from '../lib/seed';
+import { createMockSearch } from '../lib/seed';
 
 interface Busqueda {
     id_busqueda_n8n: string;
@@ -16,6 +16,7 @@ interface Busqueda {
 export default function Dashboard() {
     const [searches, setSearches] = useState<Busqueda[]>([]);
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -46,21 +47,44 @@ export default function Dashboard() {
             alert('Config error: VITE_N8N_WEBHOOK_URL not set');
             return;
         }
-
-        // Redirect to the n8n Form (The form handles ID generation and DB insertion)
         window.open(n8nFormUrl, '_blank');
     };
 
-    const handleSeed = async () => {
-        if (confirm("¿Estás seguro de que quieres poblar la base de datos con datos de prueba?")) {
-            await seedDatabase();
-            fetchSearches(); // Refresh list
+    const handleMockSearch = async () => {
+        setProcessing(true);
+        try {
+            const searchId = await createMockSearch();
+            if (searchId) {
+                await fetchSearches();
+                navigate(`/search/${searchId}`);
+            }
+        } catch (error) {
+            console.error("Demo failed", error);
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation(); // Prevent card click
+        if (!confirm("Are you sure you want to delete this search? ALL DATA will be lost.")) return;
+
+        try {
+            // Manual cascade delete (just in case DB doesn't have it)
+            await supabase.from('postulantes').delete().eq('id_busqueda_n8n', id);
+            const { error } = await supabase.from('busquedas').delete().eq('id_busqueda_n8n', id);
+
+            if (error) throw error;
+            setSearches(prev => prev.filter(s => s.id_busqueda_n8n !== id));
+        } catch (error) {
+            console.error("Delete failed", error);
+            alert("Could not delete search.");
         }
     };
 
     return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
+        <div className="space-y-8 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
                     <p className="text-emerald-100/70">Manage your recruitment pipelines</p>
@@ -68,12 +92,12 @@ export default function Dashboard() {
 
                 <div className="flex gap-3">
                     <button
-                        onClick={handleSeed}
-                        className="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 text-white px-4 py-2.5 rounded-lg shadow-lg transition-all active:scale-95 font-medium border border-white/10"
-                        title="Seed Test Data"
+                        onClick={handleMockSearch}
+                        disabled={processing}
+                        className="flex items-center gap-2 bg-purple-600/80 hover:bg-purple-600 text-white px-4 py-2.5 rounded-lg shadow-lg transition-all active:scale-95 font-medium border border-white/10 disabled:opacity-50"
                     >
-                        <Database size={18} />
-                        <span className="hidden sm:inline">Seed DB</span>
+                        <Zap size={18} className={processing ? "animate-pulse" : ""} />
+                        <span>{processing ? 'Generating...' : 'Demo Search'}</span>
                     </button>
 
                     <button
@@ -97,13 +121,14 @@ export default function Dashboard() {
                     {searches.length === 0 ? (
                         <GlassCard className="col-span-full py-16 text-center text-white/50 border-dashed border-white/10">
                             <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No active searches found. Start a new one!</p>
+                            <p className="text-lg mb-2">No active searches found.</p>
+                            <p className="text-sm">Click "Demo Search" to see how it works instantly.</p>
                         </GlassCard>
                     ) : (
                         searches.map((search) => (
                             <GlassCard
                                 key={search.id_busqueda_n8n}
-                                className="group cursor-pointer glass-hover"
+                                className="group cursor-pointer glass-hover relative"
                                 onClick={() => navigate(`/search/${search.id_busqueda_n8n}`)}
                             >
                                 <div className="flex justify-between items-start mb-4">
@@ -113,7 +138,13 @@ export default function Dashboard() {
                   `}>
                                         {search.estado.toUpperCase()}
                                     </div>
-                                    <Activity size={18} className="text-white/40" />
+
+                                    <button
+                                        onClick={(e) => handleDelete(e, search.id_busqueda_n8n)}
+                                        className="p-2 -mr-2 -mt-2 text-white/20 hover:text-red-400 hover:bg-white/10 rounded-full transition-colors z-10"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
 
                                 <h3 className="text-xl font-bold text-white mb-2 line-clamp-1">
