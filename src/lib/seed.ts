@@ -60,27 +60,43 @@ export const seedDatabase = async () => {
         const candidates = [
             {
                 id_busqueda_n8n: searchId,
-                nombre: 'Ana García',
-                email: 'ana.garcia@example.com',
-                resumen_ia: 'Alta coincidencia. Experiencia sólida en React y TypeScript. Buen perfil cultural.',
-                comentarios_admin: 'Candidata prometedora.',
+                nombre: 'Sofia Martinez',
+                email: 'sofia.martinez@tech.example.com',
+                resumen_ia: 'MATCH: 95%. Perfil excepcional. 6 años de experiencia en React, Node.js y arquitecturas cloud. Lideró equipos en su rol anterior.',
+                comentarios_admin: 'Entrevistar ASAP.',
                 estado_agenda: 'pending'
             },
             {
                 id_busqueda_n8n: searchId,
-                nombre: 'Carlos López',
-                email: 'carlos.lopez@example.com',
-                resumen_ia: 'Coincidencia media. Conoce React pero le falta experiencia en arquitecturas escalables.',
-                comentarios_admin: 'Revisar portafolio.',
+                nombre: 'Lucas Vidal',
+                email: 'lucas.vidal@dev.example.com',
+                resumen_ia: 'MATCH: 88%. Muy sólido en Frontend (React/Next.js) pero con menos experiencia en Backend de la requerida. Buen fit cultural.',
+                comentarios_admin: '',
+                estado_agenda: 'pending'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Ana García',
+                email: 'ana.garcia@example.com',
+                resumen_ia: 'MATCH: 75%. Junior avanzando a Mid-level. Tiene buenos proyectos personales pero le falta experiencia en equipos grandes.',
+                comentarios_admin: 'Mantener en cartera.',
                 estado_agenda: 'contacted'
             },
             {
                 id_busqueda_n8n: searchId,
-                nombre: 'María Rodríguez',
-                email: 'maria.rod@example.com',
-                resumen_ia: 'Baja coincidencia. Perfil más orientado a Backend.',
-                comentarios_admin: 'Descartar por ahora.',
+                nombre: 'Marcos Rivas',
+                email: 'marcos.rivas@legacy.example.com',
+                resumen_ia: 'MATCH: 40%. Perfil orientado a .NET/C#. Poca experiencia verificable en stack moderno de JS.',
+                comentarios_admin: 'Descartado por stack.',
                 estado_agenda: 'rejected'
+            },
+            {
+                id_busqueda_n8n: searchId,
+                nombre: 'Elena Torres',
+                email: 'elena.torres@ux.example.com',
+                resumen_ia: 'MATCH: 92%. Frontend Engineer con fuerte foco en UX/UI. Portfolio impresionante. Ideal para el rol de UI Lead.',
+                comentarios_admin: '',
+                estado_agenda: 'pending'
             }
         ];
 
