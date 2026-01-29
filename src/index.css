@@ -11,7 +11,7 @@
   --color-emerald-700: #047857;
   --color-emerald-800: #065f46;
   --color-emerald-900: #064e3b;
-  --color-primary: #2ECC71;
+  --color-primary: #10b981;
 
   --font-sans: 'Inter', sans-serif;
 
@@ -42,33 +42,51 @@
   }
 }
 
-/* --- THEME VARIABLES (The "Modificacion Claro" User Requested) --- */
+/* --- THEME VARIABLES --- */
 :root {
-  /* LIGHT MODE (Default) - "CLARO" */
-  --bg-page: #f0fdf4;
-  /* Emerald 50 tint */
-  --bg-glass: rgba(255, 255, 255, 0.7);
-  --bg-glass-card: rgba(255, 255, 255, 0.85);
-  --border-glass: rgba(46, 204, 113, 0.2);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-  --text-main: #0f172a;
+  /* LIGHT MODE - Clean, professional, less saturated */
+  --bg-page: #f8fafc;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass-card: rgba(255, 255, 255, 0.95);
+  --border-glass: rgba(15, 23, 42, 0.08);
+  --shadow-glass: 0 4px 24px 0 rgba(15, 23, 42, 0.08);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
 
-  --input-bg: rgba(255, 255, 255, 0.9);
-  --input-border: rgba(46, 204, 113, 0.2);
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-focus: #10b981;
+
+  /* Card specific for light mode */
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(15, 23, 42, 0.06);
+
+  /* Sidebar light mode */
+  --sidebar-bg: rgba(255, 255, 255, 0.95);
+  --sidebar-text: #475569;
+  --sidebar-hover: rgba(16, 185, 129, 0.1);
 }
 
 .dark {
-  /* DARK MODE - "OSCURO" */
+  /* DARK MODE - Rich, premium feel */
   --bg-page: #0f172a;
-  /* Slate 900 */
-  --bg-glass: rgba(255, 255, 255, 0.05);
-  --bg-glass-card: rgba(255, 255, 255, 0.08);
-  --border-glass: rgba(255, 255, 255, 0.1);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  --text-main: #f8fafc;
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-glass-card: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
 
-  --input-bg: rgba(255, 255, 255, 0.1);
-  --input-border: rgba(255, 255, 255, 0.2);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus: #34d399;
+
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.08);
+
+  --sidebar-bg: rgba(15, 23, 42, 0.95);
+  --sidebar-text: #cbd5e1;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
 }
 
 /* --- UTILITIES --- */
@@ -92,10 +110,10 @@
   }
 
   .glass-card {
-    background: var(--bg-glass-card);
+    background: var(--card-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-glass);
+    border: 1px solid var(--card-border);
     box-shadow: var(--shadow-glass);
     border-radius: 1rem;
     padding: 1.5rem;
@@ -104,7 +122,6 @@
 
   .glass-input {
     background: var(--input-bg);
-    backdrop-filter: blur(8px);
     border: 1px solid var(--input-border);
     border-radius: 0.5rem;
     padding: 0.5rem 1rem;
@@ -114,8 +131,12 @@
   }
 
   .glass-input:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  .glass-input::placeholder {
+    color: var(--text-muted);
   }
 }
 
@@ -124,14 +145,23 @@ body {
   background-color: var(--bg-page);
   color: var(--text-main);
   font-family: var(--font-sans);
-  /* Use declared var */
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
 
-  /* Gradiente Sutil */
+/* Light mode has subtle warm gradient */
+:root body {
   background-image:
-    radial-gradient(at 0% 0%, rgba(46, 204, 113, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(46, 204, 113, 0.08) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.03) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Dark mode has deeper gradient */
+.dark body {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
   background-attachment: fixed;
 }
 
@@ -141,9 +171,10 @@ body {
   flex-direction: column;
 }
 
-/* Scrollbar Styles */
+/* --- SCROLLBAR --- */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -151,10 +182,50 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
+  background: var(--text-muted);
+  opacity: 0.3;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
+  opacity: 0.5;
+}
+
+/* --- CUSTOM SCROLLBAR FOR PANELS --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+/* --- LIGHT MODE TEXT OVERRIDES --- */
+:root .text-white {
+  color: var(--text-main);
+}
+
+:root .text-white\/50,
+:root .text-white\/60,
+:root .text-white\/70 {
+  color: var(--text-muted);
+}
+
+.dark .text-white {
+  color: #ffffff;
+}
+
+/* --- SIDEBAR THEME SUPPORT --- */
+:root aside.glass {
+  background: var(--sidebar-bg);
+  border-color: var(--card-border);
+}
+
+:root aside .text-slate-300 {
+  color: var(--sidebar-text);
+}
+
+:root aside .hover\:bg-white\/10:hover {
+  background: var(--sidebar-hover);
 }

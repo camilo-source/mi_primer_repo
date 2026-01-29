@@ -7,7 +7,10 @@ import {
     type SortingState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { ArrowUpDown, Mail, Calendar, MessageSquare, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
+import { ArrowUpDown, Mail, MessageSquare, Calendar } from 'lucide-react';
+import { Badge } from './ui/Badge';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 export interface Candidate {
     id: string;
@@ -16,6 +19,7 @@ export interface Candidate {
     resumen_ia: string;
     estado_agenda: string;
     comentarios_admin: string;
+    fecha_entrevista?: string;
 }
 
 interface CandidateTableProps {
@@ -24,11 +28,15 @@ interface CandidateTableProps {
     onSchedule: (id: string) => void;
 }
 
-const statusIcons: Record<string, React.ReactNode> = {
-    pending: <Clock className="text-yellow-400" size={18} />,
-    sent: <Send className="text-blue-400" size={18} />,
-    confirmed: <CheckCircle className="text-emerald-400" size={18} />,
-    cancelled: <XCircle className="text-red-400" size={18} />
+const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+        case 'confirmed': return 'success';
+        case 'pending': return 'warning';
+        case 'cancelled':
+        case 'rejected': return 'error';
+        case 'sent': return 'default'; // Or add info variant
+        default: return 'default';
+    }
 };
 
 const columnHelper = createColumnHelper<Candidate>();
@@ -78,14 +86,14 @@ export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateT
         columnHelper.accessor('comentarios_admin', {
             header: 'Notes',
             cell: ({ row, getValue }) => (
-                <div className="flex items-center gap-2">
-                    <MessageSquare size={14} className="text-white/30 shrink-0 opacity-50" />
-                    <input
-                        type="text"
+                <div className="min-w-[220px]">
+                    <Input
                         defaultValue={getValue() || ''}
                         onBlur={(e) => onUpdateComment(row.original.id, e.target.value)}
-                        className="bg-transparent border-b border-white/10 focus:border-emerald-400 outline-none w-full text-white placeholder-white/20 text-xs py-1 transition-all"
-                        placeholder="Add note..."
+                        placeholder="Add a note..."
+                        variant="comment"
+                        className="text-sm"
+                        icon={<MessageSquare size={14} />}
                     />
                 </div>
             ),
@@ -95,10 +103,9 @@ export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateT
             cell: (info) => {
                 const status = info.getValue() || 'pending';
                 return (
-                    <div className="flex items-center gap-2" title={status}>
-                        {statusIcons[status] || statusIcons.pending}
-                        <span className="capitalize text-xs font-medium opacity-80">{status}</span>
-                    </div>
+                    <Badge variant={getStatusBadgeVariant(status)} className="capitalize">
+                        {status}
+                    </Badge>
                 );
             },
         }),
@@ -106,14 +113,15 @@ export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateT
             id: 'actions',
             header: 'Action',
             cell: ({ row }) => (
-                <button
+                <Button
+                    size="sm"
+                    variant="secondary"
                     onClick={() => onSchedule(row.original.id)}
                     disabled={row.original.estado_agenda !== 'pending'}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-emerald-500 hover:text-white text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    icon={<Calendar size={14} />}
                 >
-                    <Calendar size={14} />
                     Schedule
-                </button>
+                </Button>
             ),
         }),
     ];

@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Button } from '../components/ui/Button';
 import { Sparkles, ArrowRight } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Landing() {
     const [loading, setLoading] = useState(false);
+    const { addToast } = useToast();
 
     const handleLogin = async () => {
         setLoading(true);
@@ -25,7 +28,7 @@ export default function Landing() {
             if (error) throw error;
         } catch (error) {
             console.error('Error logging in:', error);
-            alert('Error connecting to Google');
+            addToast('Error connecting to Google', 'error');
         } finally {
             setLoading(false);
         }
@@ -53,14 +56,14 @@ export default function Landing() {
                 </p>
 
                 <div className="space-y-4">
-                    <button
+                    <Button
                         onClick={handleLogin}
-                        disabled={loading}
-                        className="group w-full flex items-center justify-center gap-3 bg-white text-emerald-900 font-semibold py-3.5 px-6 rounded-xl hover:bg-emerald-50 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                        isLoading={loading}
+                        className="w-full bg-white text-emerald-900 hover:bg-emerald-50 hover:text-emerald-950 font-bold py-6 text-lg"
+                        icon={!loading && <ArrowRight className="w-5 h-5 ml-1" />}
                     >
-                        {loading ? 'Connecting...' : 'Continue with Google'}
-                        {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-                    </button>
+                        Continue with Google
+                    </Button>
 
                     <p className="text-xs text-white/40 mt-6">
                         Secure access via Supabase Authentication

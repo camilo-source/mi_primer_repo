@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { createMockSearch } from '../lib/seed';
+import { useToast } from '../contexts/ToastContext';
 
 interface Busqueda {
     id_busqueda_n8n: string;
@@ -18,6 +21,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     useEffect(() => {
         fetchSearches();
@@ -35,6 +39,7 @@ export default function Dashboard() {
             setSearches(data || []);
         } catch (error) {
             console.error('Error fetching searches:', error);
+            addToast('Failed to load searches', 'error');
         } finally {
             setLoading(false);
         }
@@ -44,7 +49,7 @@ export default function Dashboard() {
         const n8nFormUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
         if (!n8nFormUrl) {
-            alert('Config error: VITE_N8N_WEBHOOK_URL not set');
+            addToast('Config error: VITE_N8N_WEBHOOK_URL not set', 'error');
             return;
         }
         window.open(n8nFormUrl, '_blank');
@@ -56,10 +61,12 @@ export default function Dashboard() {
             const searchId = await createMockSearch();
             if (searchId) {
                 await fetchSearches();
+                addToast('Demo search created successfully!', 'success');
                 navigate(`/search/${searchId}`);
             }
         } catch (error) {
             console.error("Demo failed", error);
+            addToast('Failed to create demo search', 'error');
         } finally {
             setProcessing(false);
         }
@@ -76,9 +83,10 @@ export default function Dashboard() {
 
             if (error) throw error;
             setSearches(prev => prev.filter(s => s.id_busqueda_n8n !== id));
+            addToast('Search deleted', 'success');
         } catch (error) {
             console.error("Delete failed", error);
-            alert("Could not delete search.");
+            addToast("Could not delete search.", 'error');
         }
     };
 
@@ -91,22 +99,22 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3">
-                    <button
+                    <Button
                         onClick={handleMockSearch}
-                        disabled={processing}
-                        className="flex items-center gap-2 bg-purple-600/80 hover:bg-purple-600 text-white px-4 py-2.5 rounded-lg shadow-lg transition-all active:scale-95 font-medium border border-white/10 disabled:opacity-50"
+                        isLoading={processing}
+                        variant="ghost"
+                        className="text-purple-300 hover:text-purple-200 hover:bg-purple-500/10"
+                        icon={<Zap size={18} className={processing ? "animate-pulse" : ""} />}
                     >
-                        <Zap size={18} className={processing ? "animate-pulse" : ""} />
-                        <span>{processing ? 'Generating...' : 'Demo Search'}</span>
-                    </button>
+                        Demo Search
+                    </Button>
 
-                    <button
+                    <Button
                         onClick={handleNewSearch}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-95 font-medium"
+                        icon={<Plus size={20} />}
                     >
-                        <Plus size={20} />
                         New Search
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -132,12 +140,9 @@ export default function Dashboard() {
                                 onClick={() => navigate(`/search/${search.id_busqueda_n8n}`)}
                             >
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`
-                    px-3 py-1 rounded-full text-xs font-medium border
-                    ${search.estado === 'active' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-500/20 text-slate-400 border-slate-500/30'}
-                  `}>
+                                    <Badge variant={search.estado === 'active' ? 'success' : 'default'}>
                                         {search.estado.toUpperCase()}
-                                    </div>
+                                    </Badge>
 
                                     <button
                                         onClick={(e) => handleDelete(e, search.id_busqueda_n8n)}

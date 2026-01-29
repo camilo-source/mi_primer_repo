@@ -2,20 +2,27 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Button } from '../components/ui/Button';
 import { CandidateTable, type Candidate } from '../components/CandidateTable';
+import { KanbanBoard } from '../components/KanbanBoard';
 import { ScheduleModal } from '../components/ScheduleModal';
-
+import { useToast } from '../contexts/ToastContext';
+import { LayoutGrid, List } from 'lucide-react';
 
 interface BusquedaInfo {
     titulo: string;
     estado: string;
 }
 
+type ViewMode = 'table' | 'kanban';
+
 export default function SearchDetail() {
     const { id } = useParams<{ id: string }>();
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [searchInfo, setSearchInfo] = useState<BusquedaInfo | null>(null);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+    const { addToast } = useToast();
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,6 +54,7 @@ export default function SearchDetail() {
             setCandidates(candidatesData || []);
         } catch (error) {
             console.error('Error fetching data:', error);
+            addToast('Error loading search details', 'error');
         } finally {
             setLoading(false);
         }
@@ -62,9 +70,32 @@ export default function SearchDetail() {
             if (error) throw error;
             // Optimistic update
             setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, comentarios_admin: newComment } : c));
+            addToast('Note updated', 'success');
         } catch (error) {
             console.error('Error updating comment:', error);
-            alert('Failed to update comment');
+            addToast('Failed to update comment', 'error');
+        }
+    };
+
+    const handleStatusChange = async (candidateId: string, newStatus: string) => {
+        try {
+            const { error } = await supabase
+                .from('postulantes')
+                .update({ estado_agenda: newStatus })
+                .eq('id', candidateId);
+
+            if (error) throw error;
+
+            // Optimistic update
+            setCandidates(prev => prev.map(c =>
+                c.id === candidateId ? { ...c, estado_agenda: newStatus } : c
+            ));
+
+            addToast(`Status updated to "${newStatus}"`, 'success');
+        } catch (error) {
+            console.error('Error updating status:', error);
+            addToast('Failed to update status', 'error');
+            throw error; // Rethrow to allow KanbanBoard to revert
         }
     };
 
@@ -107,10 +138,10 @@ export default function SearchDetail() {
             ));
 
             setIsModalOpen(false);
-            alert(`Interview confirmed for ${selectedCandidate.name} on ${new Date(startTime).toLocaleString()}!`);
+            addToast(`Interview confirmed for ${selectedCandidate.name}!`, 'success');
         } catch (error) {
             console.error('Error confirming schedule:', error);
-            alert('Failed to confirm interview.');
+            addToast('Failed to confirm interview.', 'error');
         }
     };
 
@@ -118,24 +149,63 @@ export default function SearchDetail() {
     if (loading) return <div className="p-10 text-center text-white/50 animate-pulse">Loading Search Data...</div>;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* Header */}
             <GlassCard className="relative overflow-hidden w-full">
-                <h1 className="text-3xl font-bold text-white mb-2">{searchInfo?.titulo}</h1>
-                <p className="text-emerald-100/60 font-mono text-sm">ID: {id}</p>
-                <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold border border-emerald-400/30 bg-emerald-400/10 text-emerald-300">
-                    {searchInfo?.estado.toUpperCase()}
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white mb-2">{searchInfo?.titulo}</h1>
+                        <p className="text-emerald-100/60 font-mono text-sm">ID: {id}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* View Mode Toggle */}
+                        <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                            <button
+                                onClick={() => setViewMode('kanban')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'kanban'
+                                        ? 'bg-emerald-500 text-white shadow-lg'
+                                        : 'text-white/50 hover:text-white'
+                                    }`}
+                                title="Kanban View"
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'table'
+                                        ? 'bg-emerald-500 text-white shadow-lg'
+                                        : 'text-white/50 hover:text-white'
+                                    }`}
+                                title="Table View"
+                            >
+                                <List size={18} />
+                            </button>
+                        </div>
+
+                        <div className="px-3 py-1 rounded-full text-xs font-bold border border-emerald-400/30 bg-emerald-400/10 text-emerald-300">
+                            {searchInfo?.estado.toUpperCase()}
+                        </div>
+                    </div>
                 </div>
             </GlassCard>
 
-            {/* Candidates Table */}
-            <div className="glass rounded-2xl overflow-hidden border border-white/20">
-                <CandidateTable
-                    data={candidates}
-                    onUpdateComment={handleUpdateComment}
+            {/* Candidates View */}
+            {viewMode === 'kanban' ? (
+                <KanbanBoard
+                    candidates={candidates}
+                    onStatusChange={handleStatusChange}
                     onSchedule={handleOpenSchedule}
                 />
-            </div>
+            ) : (
+                <div className="glass rounded-2xl overflow-hidden border border-white/20">
+                    <CandidateTable
+                        data={candidates}
+                        onUpdateComment={handleUpdateComment}
+                        onSchedule={handleOpenSchedule}
+                    />
+                </div>
+            )}
 
             {/* Schedule Modal */}
             <ScheduleModal

@@ -85,9 +85,10 @@ export function Sidebar() {
                         "w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 text-slate-300 transition-colors",
                         collapsed && "justify-center"
                     )}
+                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
-                    {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-                    {!collapsed && <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>}
+                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
                 </button>
 
                 <button
