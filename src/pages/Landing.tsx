@@ -8,11 +8,18 @@ export default function Landing() {
 
     const handleLogin = async () => {
         setLoading(true);
+
+        // Robust redirect logic
+        let redirectBase = window.location.origin;
+        if (!redirectBase.includes('localhost')) {
+            redirectBase = 'https://mi-primer-repo-seven.vercel.app';
+        }
+
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`
+                    redirectTo: `${redirectBase}/dashboard`
                 }
             });
             if (error) throw error;
