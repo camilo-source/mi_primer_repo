@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from './ui/GlassCard';
 import { format } from 'date-fns';
