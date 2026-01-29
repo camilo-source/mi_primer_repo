@@ -8,14 +8,11 @@ export default function Landing() {
 
     const handleLogin = async () => {
         setLoading(true);
-        const redirectUrl = `${window.location.origin}/dashboard`;
-        console.log('Intended Redirect URL:', redirectUrl);
-
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: redirectUrl
+                    redirectTo: `${window.location.origin}/dashboard`
                 }
             });
             if (error) throw error;
