@@ -1,16 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, addDays, startOfToday, setHours, setMinutes } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from './ui/GlassCard';
 import { Check, X, Clock, Calendar as CalendarIcon, Save } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 export function AvailabilityCalendar() {
     const today = startOfToday();
-    const days = Array.from({ length: 5 }).map((_, i) => addDays(today, i)); // Next 5 days
-    const hours = Array.from({ length: 9 }).map((_, i) => 9 + i); // 9 AM to 5 PM
+    const days = Array.from({ length: 5 }).map((_, i) => addDays(today, i));
+    const hours = Array.from({ length: 9 }).map((_, i) => 9 + i);
 
     const [selectedSlots, setSelectedSlots] = useState<Date[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetchAvailability();
+    }, []);
+
+    const fetchAvailability = async () => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('availability')
+                .select('start_time')
+                .gte('start_time', today.toISOString());
+
+            if (error) throw error;
+
+            if (data) {
+                setSelectedSlots(data.map(d => new Date(d.start_time)));
+            }
+        } catch (error) {
+            console.error('Error fetching availability:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('No user found');
+
+            // 1. Delete existing future availability to replace with new selection (simpler for now)
+            // Real apps might merge, but replacing ensures consistency with UI state.
+            await supabase
+                .from('availability')
+                .delete()
+                .eq('user_id', user.id)
+                .gte('start_time', today.toISOString());
+
+            // 2. Insert new slots
+            const slotsToInsert = selectedSlots.map(date => ({
+                user_id: user.id,
+                start_time: date.toISOString(),
+                end_time: setMinutes(setHours(date, date.getHours() + 1), 0).toISOString(), // 1 hour slots
+                is_booked: false
+            }));
+
+            if (slotsToInsert.length > 0) {
+                const { error } = await supabase
+                    .from('availability')
+                    .insert(slotsToInsert);
+                if (error) throw error;
+            }
+
+            alert('Availability saved successfully!');
+        } catch (error) {
+            console.error('Error saving availability:', error);
+            alert('Failed to save availability.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const toggleSlot = (date: Date, hour: number) => {
         const slotDate = setHours(setMinutes(date, 0), hour);
@@ -92,7 +160,9 @@ export function AvailabilityCalendar() {
                 <GlassCard className="min-h-[400px] flex flex-col">
                     <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                         <AnimatePresence>
-                            {selectedSlots.length === 0 ? (
+                            {loading ? (
+                                <div className="p-4 text-center text-white/50">Loading slots...</div>
+                            ) : selectedSlots.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-white/30 text-center space-y-2">
                                     <CalendarIcon size={32} strokeWidth={1.5} />
                                     <p className="text-sm">No slots selected.</p>
@@ -131,12 +201,16 @@ export function AvailabilityCalendar() {
 
                     <div className="pt-6 mt-4 border-t border-white/10">
                         <button
-                            disabled={selectedSlots.length === 0}
+                            disabled={selectedSlots.length === 0 || saving}
                             className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/20 active:scale-95"
-                            onClick={() => alert(`Saved ${selectedSlots.length} availability slots!`)}
+                            onClick={handleSave}
                         >
-                            <Save size={18} />
-                            Save Availability
+                            {saving ? (
+                                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                            ) : (
+                                <Save size={18} />
+                            )}
+                            {saving ? 'Saving...' : 'Save Availability'}
                         </button>
                     </div>
                 </GlassCard>

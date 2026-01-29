@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { CandidateTable, type Candidate } from '../components/CandidateTable';
+import { ScheduleModal } from '../components/ScheduleModal';
 
 
 interface BusquedaInfo {
@@ -15,6 +16,10 @@ export default function SearchDetail() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [searchInfo, setSearchInfo] = useState<BusquedaInfo | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState<{ id: string, name: string } | null>(null);
 
     useEffect(() => {
         if (id) fetchData();
@@ -63,31 +68,49 @@ export default function SearchDetail() {
         }
     };
 
-    const handleSchedule = async (candidateId: string) => {
-        // 1. Check availability (Mock)
-        const hasAvailability = Math.random() > 0.2; // 80% success
-
-        if (!hasAvailability) {
-            alert('No availability found for the recruiter.');
-            return;
+    const handleOpenSchedule = (candidateId: string) => {
+        const candidate = candidates.find(c => c.id === candidateId);
+        if (candidate) {
+            setSelectedCandidate({ id: candidate.id, name: candidate.nombre });
+            setIsModalOpen(true);
         }
+    };
+
+    const handleConfirmSchedule = async (slotId: string, startTime: string) => {
+        if (!selectedCandidate) return;
 
         try {
-            // 2. Trigger n8n Webhook (Mock)
-            // fetch(import.meta.env.VITE_N8N_WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ candidateId }) });
+            // 1. Mark slot as booked
+            const { error: slotError } = await supabase
+                .from('availability')
+                .update({ is_booked: true })
+                .eq('id', slotId);
 
-            // 3. Update Status
-            const { error } = await supabase
+            if (slotError) throw slotError;
+
+            // 2. Update Candidate
+            const { error: candidateError } = await supabase
                 .from('postulantes')
-                .update({ estado_agenda: 'sent' }) // Workflow: pending -> sent -> confirmed
-                .eq('id', candidateId);
+                .update({
+                    estado_agenda: 'confirmed',
+                    fecha_entrevista: startTime
+                })
+                .eq('id', selectedCandidate.id);
 
-            if (error) throw error;
+            if (candidateError) throw candidateError;
 
-            setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, estado_agenda: 'sent' } : c));
-            alert('Invitation sent via Agent!');
+            // 3. Update UI
+            setCandidates(prev => prev.map(c =>
+                c.id === selectedCandidate.id
+                    ? { ...c, estado_agenda: 'confirmed' }
+                    : c
+            ));
+
+            setIsModalOpen(false);
+            alert(`Interview confirmed for ${selectedCandidate.name} on ${new Date(startTime).toLocaleString()}!`);
         } catch (error) {
-            console.error('Error scheduling:', error);
+            console.error('Error confirming schedule:', error);
+            alert('Failed to confirm interview.');
         }
     };
 
@@ -110,9 +133,17 @@ export default function SearchDetail() {
                 <CandidateTable
                     data={candidates}
                     onUpdateComment={handleUpdateComment}
-                    onSchedule={handleSchedule}
+                    onSchedule={handleOpenSchedule}
                 />
             </div>
+
+            {/* Schedule Modal */}
+            <ScheduleModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onConfirm={handleConfirmSchedule}
+                candidateName={selectedCandidate?.name || 'Candidate'}
+            />
         </div>
     );
 }
