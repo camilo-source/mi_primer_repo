@@ -16,10 +16,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         const variants = {
             primary: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 border border-transparent",
-            secondary: "bg-white/10 text-white hover:bg-white/20 border border-white/10 backdrop-blur-md",
-            outline: "border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/10",
-            ghost: "text-white/70 hover:text-emerald-300 hover:bg-white/5",
-            danger: "bg-red-500/80 text-white hover:bg-red-600 shadow-lg shadow-red-500/20"
+            secondary: cn(
+                "border backdrop-blur-md",
+                "bg-[var(--card-bg)] border-[var(--card-border)]",
+                "text-[var(--text-main)] hover:bg-emerald-500/10 hover:border-emerald-500/30"
+            ),
+            outline: "border border-emerald-500/50 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/10",
+            ghost: "text-[var(--text-muted)] hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-500/5",
+            danger: "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20"
         };
 
         const sizes = {

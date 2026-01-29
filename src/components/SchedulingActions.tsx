@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, RefreshCw, Calendar, Clock, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, RefreshCw, Calendar, Clock, CheckCircle, Loader2, Link2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useScheduling } from '../hooks/useScheduling';
 import type { Candidate } from './CandidateTable';
@@ -19,8 +19,9 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         sendInvite,
         checkReplies,
         confirmSlot,
-        needsGoogleAuth,
-        initiateGoogleAuth
+        googleStatus,
+        connectGoogle,
+        isCheckingGoogle
     } = useScheduling();
 
     const [showSlots, setShowSlots] = useState(false);
@@ -48,21 +49,52 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         }
     };
 
-    // Need to connect Google first
-    if (needsGoogleAuth) {
+    // Loading state
+    if (isCheckingGoogle) {
         return (
-            <div className="mt-3 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                <div className="flex items-center gap-2 text-yellow-300 text-sm mb-2">
-                    <AlertCircle size={16} />
-                    <span>Conecta tu Google para enviar emails</span>
-                </div>
+            <div className="mt-3 flex items-center gap-2 text-[var(--text-muted)] text-xs">
+                <Loader2 size={14} className="animate-spin" />
+                <span>Verificando conexión...</span>
+            </div>
+        );
+    }
+
+    // Need to connect Google first
+    if (!googleStatus.connected) {
+        return (
+            <div className="mt-3">
                 <Button
                     size="sm"
-                    onClick={initiateGoogleAuth}
+                    variant="secondary"
+                    onClick={connectGoogle}
+                    icon={<Link2 size={14} />}
                     className="w-full"
                 >
                     Conectar Google
                 </Button>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1 text-center">
+                    Necesario para enviar emails
+                </p>
+            </div>
+        );
+    }
+
+    // Token expired
+    if (googleStatus.expired) {
+        return (
+            <div className="mt-3">
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={connectGoogle}
+                    icon={<RefreshCw size={14} />}
+                    className="w-full"
+                >
+                    Reconectar Google
+                </Button>
+                <p className="text-[10px] text-yellow-500 mt-1 text-center">
+                    Sesión expirada
+                </p>
             </div>
         );
     }
@@ -87,7 +119,7 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
             case 'sent':
                 return (
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-blue-300 text-xs">
+                        <div className="flex items-center gap-2 text-blue-400 text-xs">
                             <Clock size={12} className="animate-pulse" />
                             <span>Esperando respuesta...</span>
                         </div>
@@ -125,7 +157,7 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
                                     exit={{ opacity: 0, height: 0 }}
                                     className="space-y-2"
                                 >
-                                    <p className="text-xs text-emerald-300 mb-2">
+                                    <p className="text-xs text-emerald-400 mb-2">
                                         Selecciona un horario:
                                     </p>
                                     {matchedSlots.map(slot => (
@@ -133,20 +165,20 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
                                             key={slot.id}
                                             onClick={() => handleConfirmSlot(slot.id)}
                                             disabled={status === 'confirming'}
-                                            className="w-full p-2 text-left bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/50 rounded-lg transition-all flex items-center justify-between group"
+                                            className="w-full p-2 text-left bg-[var(--card-bg)] hover:bg-emerald-500/20 border border-[var(--card-border)] hover:border-emerald-500/50 rounded-lg transition-all flex items-center justify-between group"
                                         >
                                             <div>
-                                                <div className="text-sm font-medium text-white group-hover:text-emerald-300">
+                                                <div className="text-sm font-medium text-[var(--text-main)] group-hover:text-emerald-400">
                                                     {format(new Date(slot.start_time), "EEEE d 'de' MMMM", { locale: es })}
                                                 </div>
-                                                <div className="text-xs text-white/50">
+                                                <div className="text-xs text-[var(--text-muted)]">
                                                     {format(new Date(slot.start_time), 'HH:mm')} - {format(new Date(slot.end_time), 'HH:mm')}
                                                 </div>
                                             </div>
                                             {status === 'confirming' ? (
                                                 <Loader2 size={16} className="animate-spin text-emerald-400" />
                                             ) : (
-                                                <CheckCircle size={16} className="text-white/20 group-hover:text-emerald-400" />
+                                                <CheckCircle size={16} className="text-[var(--text-muted)] group-hover:text-emerald-400" />
                                             )}
                                         </button>
                                     ))}
@@ -160,10 +192,10 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
                 return (
                     <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                         <CheckCircle size={16} className="text-emerald-400" />
-                        <div className="text-xs text-emerald-300">
+                        <div className="text-xs text-emerald-400">
                             <span className="font-medium">Confirmado</span>
                             {candidate.fecha_entrevista && (
-                                <span className="block text-emerald-400/70">
+                                <span className="block text-emerald-500/70">
                                     {format(new Date(candidate.fecha_entrevista), "d MMM, HH:mm", { locale: es })}
                                 </span>
                             )}
@@ -172,7 +204,18 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
                 );
 
             default:
-                return null;
+                return (
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={handleSendInvite}
+                        isLoading={status === 'sending'}
+                        icon={<Mail size={14} />}
+                        className="w-full"
+                    >
+                        Organizar Reunión
+                    </Button>
+                );
         }
     };
 

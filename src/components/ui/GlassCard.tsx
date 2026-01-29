@@ -16,7 +16,8 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 ref={ref}
                 className={cn(
-                    "glass rounded-2xl p-6 border border-white/20 bg-white/10 shadow-xl backdrop-blur-lg transition-all",
+                    "rounded-2xl p-6 shadow-lg backdrop-blur-lg transition-all",
+                    "bg-[var(--card-bg)] border border-[var(--card-border)]",
                     className
                 )}
                 {...props}

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Button } from '../components/ui/Button';
 import { CandidateTable, type Candidate } from '../components/CandidateTable';
 import { KanbanBoard } from '../components/KanbanBoard';
 import { ScheduleModal } from '../components/ScheduleModal';
@@ -34,7 +33,6 @@ export default function SearchDetail() {
 
     const fetchData = async () => {
         try {
-            // Fetch Search Info
             const { data: searchData, error: searchError } = await supabase
                 .from('busquedas')
                 .select('titulo, estado')
@@ -44,7 +42,6 @@ export default function SearchDetail() {
             if (searchError) throw searchError;
             setSearchInfo(searchData);
 
-            // Fetch Candidates
             const { data: candidatesData, error: candidatesError } = await supabase
                 .from('postulantes')
                 .select('*')
@@ -54,7 +51,7 @@ export default function SearchDetail() {
             setCandidates(candidatesData || []);
         } catch (error) {
             console.error('Error fetching data:', error);
-            addToast('Error loading search details', 'error');
+            addToast('Error al cargar los datos', 'error');
         } finally {
             setLoading(false);
         }
@@ -68,12 +65,11 @@ export default function SearchDetail() {
                 .eq('id', candidateId);
 
             if (error) throw error;
-            // Optimistic update
             setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, comentarios_admin: newComment } : c));
-            addToast('Note updated', 'success');
+            addToast('Nota actualizada', 'success');
         } catch (error) {
             console.error('Error updating comment:', error);
-            addToast('Failed to update comment', 'error');
+            addToast('Error al actualizar nota', 'error');
         }
     };
 
@@ -86,16 +82,23 @@ export default function SearchDetail() {
 
             if (error) throw error;
 
-            // Optimistic update
             setCandidates(prev => prev.map(c =>
                 c.id === candidateId ? { ...c, estado_agenda: newStatus } : c
             ));
 
-            addToast(`Status updated to "${newStatus}"`, 'success');
+            const statusLabels: Record<string, string> = {
+                'pending': 'Pendiente',
+                'sent': 'Enviado',
+                'replied': 'Respondido',
+                'confirmed': 'Confirmado',
+                'rejected': 'Rechazado'
+            };
+
+            addToast(`Estado: "${statusLabels[newStatus] || newStatus}"`, 'success');
         } catch (error) {
             console.error('Error updating status:', error);
-            addToast('Failed to update status', 'error');
-            throw error; // Rethrow to allow KanbanBoard to revert
+            addToast('Error al actualizar estado', 'error');
+            throw error;
         }
     };
 
@@ -111,7 +114,6 @@ export default function SearchDetail() {
         if (!selectedCandidate) return;
 
         try {
-            // 1. Mark slot as booked
             const { error: slotError } = await supabase
                 .from('availability')
                 .update({ is_booked: true })
@@ -119,7 +121,6 @@ export default function SearchDetail() {
 
             if (slotError) throw slotError;
 
-            // 2. Update Candidate
             const { error: candidateError } = await supabase
                 .from('postulantes')
                 .update({
@@ -130,7 +131,6 @@ export default function SearchDetail() {
 
             if (candidateError) throw candidateError;
 
-            // 3. Update UI
             setCandidates(prev => prev.map(c =>
                 c.id === selectedCandidate.id
                     ? { ...c, estado_agenda: 'confirmed' }
@@ -138,15 +138,19 @@ export default function SearchDetail() {
             ));
 
             setIsModalOpen(false);
-            addToast(`Interview confirmed for ${selectedCandidate.name}!`, 'success');
+            addToast(`¡Entrevista confirmada para ${selectedCandidate.name}!`, 'success');
         } catch (error) {
             console.error('Error confirming schedule:', error);
-            addToast('Failed to confirm interview.', 'error');
+            addToast('Error al confirmar entrevista', 'error');
         }
     };
 
 
-    if (loading) return <div className="p-10 text-center text-white/50 animate-pulse">Loading Search Data...</div>;
+    if (loading) return (
+        <div className="p-10 text-center text-[var(--text-muted)] animate-pulse">
+            Cargando datos...
+        </div>
+    );
 
     return (
         <div className="space-y-6">
@@ -154,37 +158,37 @@ export default function SearchDetail() {
             <GlassCard className="relative overflow-hidden w-full">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">{searchInfo?.titulo}</h1>
-                        <p className="text-emerald-100/60 font-mono text-sm">ID: {id}</p>
+                        <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">{searchInfo?.titulo}</h1>
+                        <p className="text-[var(--text-muted)] font-mono text-sm">ID: {id}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
                         {/* View Mode Toggle */}
-                        <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                        <div className="flex bg-[var(--card-bg)] rounded-lg p-1 border border-[var(--card-border)]">
                             <button
                                 onClick={() => setViewMode('kanban')}
                                 className={`p-2 rounded-md transition-all ${viewMode === 'kanban'
-                                        ? 'bg-emerald-500 text-white shadow-lg'
-                                        : 'text-white/50 hover:text-white'
+                                    ? 'bg-emerald-500 text-white shadow-lg'
+                                    : 'text-[var(--text-muted)] hover:text-emerald-500'
                                     }`}
-                                title="Kanban View"
+                                title="Vista Kanban"
                             >
                                 <LayoutGrid size={18} />
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={`p-2 rounded-md transition-all ${viewMode === 'table'
-                                        ? 'bg-emerald-500 text-white shadow-lg'
-                                        : 'text-white/50 hover:text-white'
+                                    ? 'bg-emerald-500 text-white shadow-lg'
+                                    : 'text-[var(--text-muted)] hover:text-emerald-500'
                                     }`}
-                                title="Table View"
+                                title="Vista Tabla"
                             >
                                 <List size={18} />
                             </button>
                         </div>
 
-                        <div className="px-3 py-1 rounded-full text-xs font-bold border border-emerald-400/30 bg-emerald-400/10 text-emerald-300">
-                            {searchInfo?.estado.toUpperCase()}
+                        <div className="px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+                            {searchInfo?.estado === 'active' ? 'ACTIVO' : searchInfo?.estado.toUpperCase()}
                         </div>
                     </div>
                 </div>
@@ -198,7 +202,7 @@ export default function SearchDetail() {
                     onSchedule={handleOpenSchedule}
                 />
             ) : (
-                <div className="glass rounded-2xl overflow-hidden border border-white/20">
+                <div className="rounded-2xl overflow-hidden border border-[var(--card-border)] bg-[var(--card-bg)]">
                     <CandidateTable
                         data={candidates}
                         onUpdateComment={handleUpdateComment}
@@ -212,7 +216,7 @@ export default function SearchDetail() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onConfirm={handleConfirmSchedule}
-                candidateName={selectedCandidate?.name || 'Candidate'}
+                candidateName={selectedCandidate?.name || 'Candidato'}
             />
         </div>
     );

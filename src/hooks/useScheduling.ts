@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 
@@ -10,20 +10,28 @@ interface MatchedSlot {
     end_time: string;
 }
 
+interface GoogleStatus {
+    connected: boolean;
+    expired?: boolean;
+}
+
 interface UseSchedulingReturn {
     status: SchedulingStatus;
     matchedSlots: MatchedSlot[];
     sendInvite: (candidateId: string) => Promise<boolean>;
     checkReplies: (candidateId: string) => Promise<boolean>;
     confirmSlot: (candidateId: string, slotId: string) => Promise<boolean>;
-    needsGoogleAuth: boolean;
-    initiateGoogleAuth: () => void;
+    googleStatus: GoogleStatus;
+    checkGoogleConnection: () => Promise<void>;
+    connectGoogle: () => void;
+    isCheckingGoogle: boolean;
 }
 
 export function useScheduling(): UseSchedulingReturn {
     const [status, setStatus] = useState<SchedulingStatus>('idle');
     const [matchedSlots, setMatchedSlots] = useState<MatchedSlot[]>([]);
-    const [needsGoogleAuth, setNeedsGoogleAuth] = useState(false);
+    const [googleStatus, setGoogleStatus] = useState<GoogleStatus>({ connected: false });
+    const [isCheckingGoogle, setIsCheckingGoogle] = useState(true);
     const { addToast } = useToast();
 
     // Get current user ID
@@ -31,6 +39,48 @@ export function useScheduling(): UseSchedulingReturn {
         const { data: { user } } = await supabase.auth.getUser();
         return user?.id;
     };
+
+    // Check if Google is connected
+    const checkGoogleConnection = useCallback(async () => {
+        setIsCheckingGoogle(true);
+        try {
+            const userId = await getUserId();
+            if (!userId) {
+                setGoogleStatus({ connected: false });
+                return;
+            }
+
+            const response = await fetch(`/api/auth/google/status?userId=${userId}`);
+            const data = await response.json();
+
+            setGoogleStatus({
+                connected: data.connected,
+                expired: data.expired
+            });
+        } catch (error) {
+            console.error('Error checking Google status:', error);
+            setGoogleStatus({ connected: false });
+        } finally {
+            setIsCheckingGoogle(false);
+        }
+    }, []);
+
+    // Check Google connection on mount
+    useEffect(() => {
+        checkGoogleConnection();
+    }, [checkGoogleConnection]);
+
+    // Redirect to Google OAuth
+    const connectGoogle = useCallback(async () => {
+        const userId = await getUserId();
+        if (!userId) {
+            addToast('Debes iniciar sesión primero', 'error');
+            return;
+        }
+
+        const returnUrl = window.location.pathname;
+        window.location.href = `/api/auth/google?userId=${userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
+    }, [addToast]);
 
     // Send invitation email with AI-generated content
     const sendInvite = useCallback(async (candidateId: string): Promise<boolean> => {
@@ -49,7 +99,6 @@ export function useScheduling(): UseSchedulingReturn {
             const data = await response.json();
 
             if (data.needsAuth) {
-                setNeedsGoogleAuth(true);
                 addToast('Necesitas conectar tu cuenta de Google', 'warning');
                 return false;
             }
@@ -138,36 +187,15 @@ export function useScheduling(): UseSchedulingReturn {
         }
     }, [addToast]);
 
-    // Initiate Google OAuth for additional permissions
-    const initiateGoogleAuth = useCallback(() => {
-        // Redirect to Google OAuth with required scopes
-        const scopes = [
-            'https://www.googleapis.com/auth/gmail.send',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/calendar.events'
-        ].join(' ');
-
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        const redirectUri = `${window.location.origin}/auth/google/callback`;
-
-        const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-        authUrl.searchParams.set('client_id', clientId);
-        authUrl.searchParams.set('redirect_uri', redirectUri);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', scopes);
-        authUrl.searchParams.set('access_type', 'offline');
-        authUrl.searchParams.set('prompt', 'consent');
-
-        window.location.href = authUrl.toString();
-    }, []);
-
     return {
         status,
         matchedSlots,
         sendInvite,
         checkReplies,
         confirmSlot,
-        needsGoogleAuth,
-        initiateGoogleAuth
+        googleStatus,
+        checkGoogleConnection,
+        connectGoogle,
+        isCheckingGoogle
     };
 }
