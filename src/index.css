@@ -10,11 +10,11 @@
   }
 
   .glass-card {
-    @apply glass rounded-xl p-6;
+    @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-lg rounded-xl p-6;
   }
 
   .glass-input {
-    @apply glass rounded-lg px-4 py-2 outline-none focus:border-primary/50 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400;
+    @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-lg rounded-lg px-4 py-2 outline-none focus:border-primary/50 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400;
   }
 }
 
