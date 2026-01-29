@@ -17,7 +17,7 @@ export const seedDatabase = async () => {
 
     try {
         // 2. Ensure Profile Exists
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
             .from('clientes')
             .select('id')
             .eq('id', userId)
