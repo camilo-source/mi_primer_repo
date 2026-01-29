@@ -19,6 +19,7 @@
   --animate-slide-up: slide-up 0.5s ease-out;
 }
 
+/* --- ANIMATIONS --- */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -41,34 +42,119 @@
   }
 }
 
+/* --- THEME VARIABLES (The "Modificacion Claro" User Requested) --- */
+:root {
+  /* LIGHT MODE (Default) - "CLARO" */
+  --bg-page: #f0fdf4;
+  /* Emerald 50 tint */
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-card: rgba(255, 255, 255, 0.85);
+  --border-glass: rgba(46, 204, 113, 0.2);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  --text-main: #0f172a;
+
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: rgba(46, 204, 113, 0.2);
+}
+
+.dark {
+  /* DARK MODE - "OSCURO" */
+  --bg-page: #0f172a;
+  /* Slate 900 */
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --bg-glass-card: rgba(255, 255, 255, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --text-main: #f8fafc;
+
+  --input-bg: rgba(255, 255, 255, 0.1);
+  --input-border: rgba(255, 255, 255, 0.2);
+}
+
+/* --- UTILITIES --- */
 @layer utilities {
   .glass {
-    @apply backdrop-blur-xl bg-white/40 dark:bg-white/10 border border-white/40 dark:border-white/20 shadow-xl dark:shadow-lg;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--shadow-glass);
   }
 
   .glass-hover {
-    @apply hover:bg-white/60 dark:hover:bg-white/20 transition-all duration-300;
+    transition: all 0.3s ease;
+  }
+
+  .glass-hover:hover {
+    background: var(--bg-glass-card);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
   }
 
   .glass-card {
-    @apply backdrop-blur-xl bg-white/50 dark:bg-white/10 border border-white/40 dark:border-white/20 shadow-xl dark:shadow-lg rounded-xl p-6;
+    background: var(--bg-glass-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--shadow-glass);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    color: var(--text-main);
   }
 
   .glass-input {
-    @apply backdrop-blur-md bg-white/50 dark:bg-white/10 border border-emerald-500/20 dark:border-white/20 shadow-sm rounded-lg px-4 py-2 outline-none focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400;
+    background: var(--input-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--input-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    outline: none;
+    color: var(--text-main);
+    transition: all 0.2s;
+  }
+
+  .glass-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
   }
 }
 
+/* --- BASE STYLES --- */
 body {
-  @apply bg-emerald-50/50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen font-sans selection:bg-emerald-200 dark:selection:bg-emerald-500/30;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  /* Use declared var */
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+
+  /* Gradiente Sutil */
   background-image:
     radial-gradient(at 0% 0%, rgba(46, 204, 113, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(46, 204, 113, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(46, 204, 113, 0.08) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(46, 204, 113, 0.05) 0px, transparent 50%);
+    radial-gradient(at 100% 100%, rgba(46, 204, 113, 0.08) 0px, transparent 50%);
   background-attachment: fixed;
 }
 
 #root {
-  @apply min-h-screen flex flex-col;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
 }
