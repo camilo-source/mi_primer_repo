@@ -295,27 +295,27 @@
 
 /* --- THEME VARIABLES --- */
 :root {
-  /* LIGHT MODE - Clean, professional, less saturated */
-  --bg-page: #f8fafc;
-  --bg-glass: rgba(255, 255, 255, 0.8);
-  --bg-glass-card: rgba(255, 255, 255, 0.95);
-  --border-glass: rgba(15, 23, 42, 0.08);
-  --shadow-glass: 0 4px 24px 0 rgba(15, 23, 42, 0.08);
-  --text-main: #1e293b;
-  --text-muted: #64748b;
+  /* LIGHT MODE - Clean, professional, better contrast */
+  --bg-page: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass-card: rgba(255, 255, 255, 0.98);
+  --border-glass: rgba(15, 23, 42, 0.15);
+  --shadow-glass: 0 4px 24px 0 rgba(15, 23, 42, 0.12);
+  --text-main: #0f172a;
+  --text-muted: #475569;
 
   --input-bg: #ffffff;
-  --input-border: #e2e8f0;
+  --input-border: #cbd5e1;
   --input-focus: #10b981;
 
   /* Card specific for light mode */
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --card-border: rgba(15, 23, 42, 0.06);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(15, 23, 42, 0.12);
 
   /* Sidebar light mode */
-  --sidebar-bg: rgba(255, 255, 255, 0.95);
-  --sidebar-text: #475569;
-  --sidebar-hover: rgba(16, 185, 129, 0.1);
+  --sidebar-bg: rgba(255, 255, 255, 0.98);
+  --sidebar-text: #334155;
+  --sidebar-hover: rgba(16, 185, 129, 0.12);
 }
 
 .dark {

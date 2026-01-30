@@ -77,19 +77,41 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         }
     };
 
-    const handleSendEmail = () => {
+    const handleSendEmail = async () => {
         if (!bookingUrl) return;
 
-        const subject = encodeURIComponent('Agenda tu entrevista');
-        const body = encodeURIComponent(
-            `Hola ${candidate.nombre},\n\n` +
-            `¡Gracias por tu interés!\n\n` +
-            `Seleccioná el horario que mejor te quede:\n\n` +
-            `${bookingUrl}\n\n` +
-            `Saludos`
-        );
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
 
-        window.open(`mailto:${candidate.email}?subject=${subject}&body=${body}`, '_blank');
+            const response = await fetch('/api/scheduling/send-invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    candidateId: candidate.id,
+                    userId: user.id
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (data.needsAuth) {
+                    addToast('Necesitas conectar tu cuenta de Google primero', 'warning');
+                    return;
+                }
+                throw new Error(data.error || 'Failed to send email');
+            }
+
+            addToast('✉️ Email enviado exitosamente', 'success');
+            onStatusChange(candidate.id, 'sent');
+        } catch (error) {
+            console.error('Send email error:', error);
+            addToast('Error al enviar email', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // CONFIRMED STATE

@@ -9,7 +9,12 @@ import { supabase } from '../lib/supabase';
 export function AvailabilityCalendar() {
     const today = startOfToday();
     const days = Array.from({ length: 5 }).map((_, i) => addDays(today, i));
-    const hours = Array.from({ length: 9 }).map((_, i) => 9 + i);
+    // Generate 30-minute intervals from 9:00 to 17:30
+    const timeSlots = Array.from({ length: 17 }).map((_, i) => {
+        const hour = Math.floor(i / 2) + 9;
+        const minute = (i % 2) * 30;
+        return { hour, minute };
+    });
 
     const [selectedSlots, setSelectedSlots] = useState<Date[]>([]);
     const [loading, setLoading] = useState(false);
@@ -60,7 +65,7 @@ export function AvailabilityCalendar() {
             const slotsToInsert = selectedSlots.map(date => ({
                 user_id: user.id,
                 start_time: date.toISOString(),
-                end_time: setMinutes(setHours(date, date.getHours() + 1), 0).toISOString(), // 1 hour slots
+                end_time: setMinutes(date, date.getMinutes() + 30).toISOString(), // 30 minute slots
                 is_booked: false
             }));
 
@@ -80,8 +85,8 @@ export function AvailabilityCalendar() {
         }
     };
 
-    const toggleSlot = (date: Date, hour: number) => {
-        const slotDate = setHours(setMinutes(date, 0), hour);
+    const toggleSlot = (date: Date, hour: number, minute: number) => {
+        const slotDate = setMinutes(setHours(date, hour), minute);
         const exists = selectedSlots.find(d => d.getTime() === slotDate.getTime());
 
         if (exists) {
@@ -91,8 +96,8 @@ export function AvailabilityCalendar() {
         }
     };
 
-    const isSelected = (date: Date, hour: number) => {
-        const slotDate = setHours(setMinutes(date, 0), hour);
+    const isSelected = (date: Date, hour: number, minute: number) => {
+        const slotDate = setMinutes(setHours(date, hour), minute);
         return selectedSlots.some(d => d.getTime() === slotDate.getTime());
     };
 
@@ -121,19 +126,19 @@ export function AvailabilityCalendar() {
                     ))}
 
                     {/* Time Rows */}
-                    {hours.map(hour => (
+                    {timeSlots.map(({ hour, minute }, index) => (
                         <>
-                            <div key={`time-${hour}`} className="flex items-center justify-center text-xs text-white/40 font-mono">
-                                {format(setHours(today, hour), 'h a')}
+                            <div key={`time-${index}`} className="flex items-center justify-center text-xs text-white/40 font-mono">
+                                {format(setMinutes(setHours(today, hour), minute), 'h:mm a')}
                             </div>
                             {days.map(day => {
-                                const active = isSelected(day, hour);
+                                const active = isSelected(day, hour, minute);
                                 return (
                                     <motion.button
-                                        key={`${day.toISOString()}-${hour}`}
+                                        key={`${day.toISOString()}-${hour}-${minute}`}
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
-                                        onClick={() => toggleSlot(day, hour)}
+                                        onClick={() => toggleSlot(day, hour, minute)}
                                         className={cn(
                                             "h-10 rounded-lg border transition-all duration-300 flex items-center justify-center",
                                             active
