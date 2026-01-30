@@ -26,6 +26,7 @@ export default function BookingPage() {
     const [data, setData] = useState<BookingData | null>(null);
     const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
     const [confirmedSlot, setConfirmedSlot] = useState<Slot | null>(null);
+    const [meetLink, setMeetLink] = useState<string | null>(null);
     const [error, setError] = useState<string>('');
 
     useEffect(() => {
@@ -74,6 +75,9 @@ export default function BookingPage() {
             }
 
             setConfirmedSlot(selectedSlot);
+            if (result.interview?.meetLink) {
+                setMeetLink(result.interview.meetLink);
+            }
             setState('confirmed');
             // Play success sound
             playSound.success();
@@ -144,7 +148,7 @@ export default function BookingPage() {
                                     <Sparkles className="w-6 h-6 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <p className="text-emerald-300 text-sm font-medium">GreenGlass ATS</p>
+                                    <p className="text-emerald-300 text-sm font-medium">VIBE CODE ATS</p>
                                     <h1 className="text-2xl font-bold text-white">{data.searchTitle}</h1>
                                 </div>
                             </div>
@@ -298,12 +302,12 @@ export default function BookingPage() {
                                 const icsContent = [
                                     'BEGIN:VCALENDAR',
                                     'VERSION:2.0',
-                                    'PRODID:-//GreenGlass ATS//Booking//ES',
+                                    'PRODID:-//VIBE CODE ATS//Booking//ES',
                                     'BEGIN:VEVENT',
                                     `DTSTART:${formatDate(start)}`,
                                     `DTEND:${formatDate(end)}`,
                                     `SUMMARY:${title}`,
-                                    `DESCRIPTION:Entrevista agendada vía GreenGlass ATS`,
+                                    `DESCRIPTION:Entrevista agendada vía VIBE CODE ATS`,
                                     'STATUS:CONFIRMED',
                                     'END:VEVENT',
                                     'END:VCALENDAR'
@@ -322,6 +326,24 @@ export default function BookingPage() {
                             <Download size={18} />
                             Agregar a mi calendario
                         </motion.button>
+
+                        {/* Google Meet Link */}
+                        {meetLink && (
+                            <motion.a
+                                href={meetLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.6 }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => playSound.click()}
+                                className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+                            >
+                                🎥 Unirse a Google Meet
+                            </motion.a>
+                        )}
 
                         <p className="mt-6 text-white/40 text-sm">
                             Recibirás un email con los detalles de la reunión.

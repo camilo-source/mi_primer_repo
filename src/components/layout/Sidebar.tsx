@@ -45,7 +45,7 @@ export function Sidebar() {
             <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
                 {!collapsed && (
                     <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-[var(--brand-primary)] to-emerald-700 dark:to-emerald-200 truncate">
-                        GreenGlass
+                        VIBE CODE
                     </span>
                 )}
                 <button
@@ -58,23 +58,25 @@ export function Sidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
-                {navItems.map((item) => (
+                {navItems.map((item, index) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) => cn(
-                            "flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group relative",
+                            "flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-apple group relative apple-hover",
+                            "animate-apple-slide-right",
                             isActive
-                                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-100 shadow-md border border-emerald-500/30"
+                                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-100 shadow-md border border-emerald-500/30 glow-border-static"
                                 : "hover:bg-emerald-500/10 text-[var(--sidebar-text)] hover:text-emerald-600 dark:hover:text-emerald-300"
                         )}
+                        style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                        <item.icon size={22} className="min-w-[22px]" />
+                        <item.icon size={22} className="min-w-[22px] transition-transform duration-300 ease-apple group-hover:scale-110" />
                         {!collapsed && <span className="truncate">{item.label}</span>}
 
                         {/* Tooltip for collapsed state */}
                         {collapsed && (
-                            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-300 ease-apple whitespace-nowrap pointer-events-none z-50 apple-scale-in">
                                 {item.label}
                             </div>
                         )}

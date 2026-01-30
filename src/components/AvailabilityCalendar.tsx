@@ -17,6 +17,7 @@ export function AvailabilityCalendar() {
     });
 
     const [selectedSlots, setSelectedSlots] = useState<Date[]>([]);
+    const [bookedSlots, setBookedSlots] = useState<Date[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -30,15 +31,21 @@ export function AvailabilityCalendar() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            // Fetch all availability slots
             const { data, error } = await supabase
                 .from('availability')
-                .select('start_time')
+                .select('start_time, is_booked')
                 .gte('start_time', today.toISOString());
 
             if (error) throw error;
 
             if (data) {
-                setSelectedSlots(data.map(d => new Date(d.start_time)));
+                // Separate available and booked slots
+                const available = data.filter(d => !d.is_booked).map(d => new Date(d.start_time));
+                const booked = data.filter(d => d.is_booked).map(d => new Date(d.start_time));
+
+                setSelectedSlots(available);
+                setBookedSlots(booked);
             }
         } catch (error) {
             console.error('Error fetching availability:', error);
@@ -87,6 +94,11 @@ export function AvailabilityCalendar() {
 
     const toggleSlot = (date: Date, hour: number, minute: number) => {
         const slotDate = setMinutes(setHours(date, hour), minute);
+
+        // Don't allow toggling booked slots
+        const isBooked = bookedSlots.some(d => d.getTime() === slotDate.getTime());
+        if (isBooked) return;
+
         const exists = selectedSlots.find(d => d.getTime() === slotDate.getTime());
 
         if (exists) {
@@ -101,6 +113,11 @@ export function AvailabilityCalendar() {
         return selectedSlots.some(d => d.getTime() === slotDate.getTime());
     };
 
+    const isBooked = (date: Date, hour: number, minute: number) => {
+        const slotDate = setMinutes(setHours(date, hour), minute);
+        return bookedSlots.some(d => d.getTime() === slotDate.getTime());
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Calendar Grid */}
@@ -110,7 +127,20 @@ export function AvailabilityCalendar() {
                         <CalendarIcon className="text-emerald-400" />
                         Select Availability
                     </h2>
-                    <p className="text-sm text-white/50">Click slots to toggle</p>
+                    <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-white/5 border border-white/10"></div>
+                            <span className="text-white/50">Available</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-emerald-500 border border-emerald-400"></div>
+                            <span className="text-white/50">Selected</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500/30"></div>
+                            <span className="text-white/50">Booked</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-6 gap-2">
@@ -133,20 +163,25 @@ export function AvailabilityCalendar() {
                             </div>
                             {days.map(day => {
                                 const active = isSelected(day, hour, minute);
+                                const booked = isBooked(day, hour, minute);
                                 return (
                                     <motion.button
                                         key={`${day.toISOString()}-${hour}-${minute}`}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => toggleSlot(day, hour, minute)}
+                                        whileHover={!booked ? { scale: 1.05 } : {}}
+                                        whileTap={!booked ? { scale: 0.95 } : {}}
+                                        onClick={() => !booked && toggleSlot(day, hour, minute)}
+                                        disabled={booked}
                                         className={cn(
                                             "h-10 rounded-lg border transition-all duration-300 flex items-center justify-center",
-                                            active
-                                                ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(46,204,113,0.3)]"
-                                                : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                            booked
+                                                ? "bg-red-500/20 border-red-500/30 cursor-not-allowed opacity-50"
+                                                : active
+                                                    ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(46,204,113,0.3)]"
+                                                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
                                         )}
                                     >
                                         {active && <Check size={16} className="animate-fade-in" />}
+                                        {booked && <X size={16} className="text-red-400" />}
                                     </motion.button>
                                 );
                             })}

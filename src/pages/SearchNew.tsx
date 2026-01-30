@@ -166,8 +166,7 @@ export default function SearchNew() {
                 {/* Native Option */}
                 <GlassCard
                     hover
-                    soundOnHover
-                    className="group cursor-pointer p-8 text-center"
+                    className="group cursor-pointer p-8 text-center apple-hover-lift"
                     onClick={() => setShowForm(true)}
                 >
                     <div className="mb-6 flex justify-center">
@@ -188,8 +187,7 @@ export default function SearchNew() {
                 {/* n8n Option */}
                 <GlassCard
                     hover
-                    soundOnHover
-                    className="group cursor-pointer p-8 text-center"
+                    className="group cursor-pointer p-8 text-center apple-hover-lift"
                     onClick={handleN8nRedirect}
                 >
                     <div className="mb-6 flex justify-center">

@@ -1,66 +1,54 @@
-import React from 'react';
-import { cn } from '../../lib/utils';
-import { motion, type HTMLMotionProps } from 'framer-motion';
-import { playSound } from '../../lib/sounds';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
-interface GlassCardProps extends HTMLMotionProps<"div"> {
-    children: React.ReactNode;
+interface GlassCardProps {
+    children: ReactNode;
     className?: string;
     hover?: boolean;
     glow?: boolean;
-    soundOnHover?: boolean;
+    gradient?: boolean;
+    style?: React.CSSProperties;
+    onClick?: () => void;
 }
 
-export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
-    ({ children, className, hover = false, glow = false, soundOnHover = false, onMouseEnter, ...props }, ref) => {
+export const GlassCard = ({
+    children,
+    className,
+    hover = true,
+    glow = false,
+    gradient = false,
+    style,
+    onClick
+}: GlassCardProps) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            whileHover={hover ? { y: -4, scale: 1.01 } : {}}
+            onClick={onClick}
+            style={style}
+            className={cn(
+                "liquid-glass-card relative",
+                onClick && "cursor-pointer",
+                glow && "glow-border-static",
+                gradient && "glow-border",
+                className
+            )}
+        >
+            {/* Top shine effect */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50" />
 
-        const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-            if (soundOnHover) {
-                playSound.hover();
-            }
-            if (onMouseEnter) {
-                (onMouseEnter as (e: React.MouseEvent<HTMLDivElement>) => void)(e);
-            }
-        };
-
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{
-                    duration: 0.4,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    scale: { type: "spring", stiffness: 300, damping: 20 }
-                }}
-                whileHover={hover ? {
-                    scale: 1.01,
-                    y: -4,
-                    transition: { duration: 0.2 }
-                } : undefined}
-                ref={ref}
-                onMouseEnter={handleMouseEnter}
-                className={cn(
-                    "relative rounded-2xl p-6 transition-all duration-300",
-                    "bg-[var(--card-bg)] border border-[var(--card-border)]",
-                    "shadow-[var(--card-shadow)]",
-                    "backdrop-blur-xl",
-                    hover && "cursor-pointer hover:shadow-[var(--shadow-lg)] hover:border-[var(--brand-primary)]",
-                    glow && "animate-glow-pulse",
-                    className
-                )}
-                {...props}
-            >
-                {/* Shimmer overlay effect on hover */}
-                {hover && (
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                    </div>
-                )}
+            {/* Content */}
+            <div className="relative z-10">
                 {children}
-            </motion.div>
-        );
-    }
-);
+            </div>
 
-GlassCard.displayName = "GlassCard";
-
+            {/* Bottom glow */}
+            {glow && (
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-emerald-500/20 blur-xl rounded-full" />
+            )}
+        </motion.div>
+    );
+};

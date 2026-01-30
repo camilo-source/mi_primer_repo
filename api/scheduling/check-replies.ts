@@ -141,7 +141,7 @@ function extractEmailBody(message: any): string {
 }
 
 // Use AI to extract availability from candidate's reply
-async function analyzeReplyWithAI(replyText: string, userSlots: any[]): Promise<any[]> {
+async function analyzeReplyWithAI(replyText: string, userSlots: any[]): Promise<any> {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     const userSlotsText = userSlots.map(slot => {

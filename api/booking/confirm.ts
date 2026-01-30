@@ -1,5 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { google } from 'googleapis';
+
+const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+);
 
 /**
  * Confirm a booking slot
@@ -90,13 +97,105 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'Failed to confirm interview' });
         }
 
+        // Get search info for calendar event
+        const { data: search } = await supabase
+            .from('busquedas')
+            .select('titulo')
+            .eq('id', candidate.id_busqueda_n8n)
+            .single();
+
+        let googleEventId = null;
+        let meetLink = null;
+
+        // Try to create Google Calendar event
+        try {
+            // Get admin/recruiter tokens (you'll need to store these)
+            const { data: adminTokens } = await supabase
+                .from('user_tokens')
+                .select('google_access_token, google_refresh_token')
+                .single();
+
+            if (adminTokens?.google_access_token) {
+                oauth2Client.setCredentials({
+                    access_token: adminTokens.google_access_token,
+                    refresh_token: adminTokens.google_refresh_token,
+                });
+
+                const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+                const event = {
+                    summary: `Entrevista: ${search?.titulo || 'Posición'}`,
+                    description: `Entrevista con ${candidate.nombre}.\n\nGenerado automáticamente por VIBE CODE ATS.`,
+                    start: {
+                        dateTime: slot.start_time,
+                        timeZone: 'America/Argentina/Buenos_Aires',
+                    },
+                    end: {
+                        dateTime: slot.end_time,
+                        timeZone: 'America/Argentina/Buenos_Aires',
+                    },
+                    attendees: [
+                        { email: candidate.email, displayName: candidate.nombre }
+                    ],
+                    conferenceData: {
+                        createRequest: {
+                            requestId: `booking-${candidate.id}-${Date.now()}`,
+                            conferenceSolutionKey: { type: 'hangoutsMeet' }
+                        }
+                    },
+                    reminders: {
+                        useDefault: false,
+                        overrides: [
+                            { method: 'email', minutes: 24 * 60 },
+                            { method: 'popup', minutes: 60 },
+                        ],
+                    },
+                };
+
+                const response = await calendar.events.insert({
+                    calendarId: 'primary',
+                    requestBody: event,
+                    conferenceDataVersion: 1,
+                    sendUpdates: 'all',
+                });
+
+                googleEventId = response.data.id;
+                meetLink = response.data.hangoutLink;
+
+                // Update candidate with Google event info
+                await supabase
+                    .from('postulantes')
+                    .update({
+                        google_event_id: googleEventId,
+                        google_meet_link: meetLink,
+                    })
+                    .eq('id', candidate.id);
+            }
+        } catch (calendarError) {
+            console.error('Calendar creation failed (non-critical):', calendarError);
+            // Don't fail the booking if calendar creation fails
+        }
+
+        // Send confirmation email to candidate
+        try {
+            await fetch(`${process.env.VERCEL_URL || 'http://localhost:5173'}/api/emails/send-confirmation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ candidateId: candidate.id }),
+            });
+        } catch (emailError) {
+            console.error('Email sending failed (non-critical):', emailError);
+            // Don't fail the booking if email fails
+        }
+
         return res.status(200).json({
             success: true,
             message: '¡Entrevista confirmada!',
             interview: {
                 candidateName: candidate.nombre,
                 startTime: slot.start_time,
-                endTime: slot.end_time
+                endTime: slot.end_time,
+                meetLink: meetLink,
             }
         });
 
