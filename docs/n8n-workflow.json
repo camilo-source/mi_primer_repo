@@ -1,0 +1,126 @@
+{
+    "name": "VIBE CODE ATS - Procesar Candidatos con IA",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "start-processing",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Formatear candidatos para VIBE CODE ATS\nconst candidatos = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  \n  candidatos.push({\n    nombre: data.nombre || data.name || \"Sin nombre\",\n    email: data.email || \"sin-email@example.com\",\n    telefono: data.telefono || data.phone || null,\n    linkedin: data.linkedin || null,\n    cv_url: data.cv_url || null,\n    resumen_ia: data.resumen || data.summary || null,\n    score_ia: parseInt(data.score) || 0,\n    habilidades: Array.isArray(data.habilidades) \n      ? data.habilidades \n      : (data.skills || \"\").split(',').map(s => s.trim()).filter(Boolean),\n    experiencia_anos: parseInt(data.experiencia) || 0,\n    ubicacion: data.ubicacion || data.location || null\n  });\n}\n\nconst searchId = $('Webhook Trigger').item.json.search_id;\n\nreturn [{\n  json: {\n    id_busqueda_n8n: searchId,\n    candidatos: candidatos\n  }\n}];"
+            },
+            "id": "format-data",
+            "name": "Formatear Datos",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://tu-dominio.vercel.app/api/n8n/webhook",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ $json }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "json"
+                        }
+                    }
+                }
+            },
+            "id": "send-to-vibe-code",
+            "name": "Enviar a VIBE CODE ATS",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}"
+            },
+            "id": "respond-to-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Formatear Datos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Formatear Datos": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar a VIBE CODE ATS",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar a VIBE CODE ATS": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-01-30T06:08:00.000Z",
+    "versionId": "1"
+}
