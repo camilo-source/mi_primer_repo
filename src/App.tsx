@@ -3,14 +3,17 @@ import Landing from './pages/Landing';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard';
 import SearchDetail from './pages/SearchDetail';
-
 import CalendarPage from './pages/CalendarPage';
+import BookingPage from './pages/BookingPage';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
+
+        {/* Public Booking Page (Calendly-style) */}
+        <Route path="/book/:token" element={<BookingPage />} />
 
         {/* Protected Routes */}
         <Route element={<MainLayout />}>
