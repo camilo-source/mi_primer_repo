@@ -4,7 +4,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { SearchBar } from '../components/ui/SearchBar';
-import { FilterDropdown } from '../components/ui/FilterDropdown';
+
 import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap, ChevronDown, Database, Users, Mail, Star, ArrowUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -27,7 +27,6 @@ export default function Dashboard() {
     const [processing, setProcessing] = useState(false);
     const [showDemoMenu, setShowDemoMenu] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
     const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
     const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -52,15 +51,9 @@ export default function Dashboard() {
     const filteredSearches = useMemo(() => {
         let result = searches.filter(search => {
             // Filter by search query (title)
-            const matchesSearch = search.titulo
+            return search.titulo
                 .toLowerCase()
                 .includes(searchQuery.toLowerCase());
-
-            // Filter by status
-            const matchesStatus = statusFilter === 'all' ||
-                search.estado === statusFilter;
-
-            return matchesSearch && matchesStatus;
         });
 
         // Sort based on sortOrder
@@ -77,25 +70,9 @@ export default function Dashboard() {
         }
 
         return result;
-    }, [searches, searchQuery, statusFilter, sortOrder]);
+    }, [searches, searchQuery, sortOrder]);
 
-    // Calculate counts for each status
-    const statusCounts = useMemo(() => {
-        const counts = {
-            all: searches.length,
-            active: 0,
-            inactive: 0,
-            closed: 0
-        };
 
-        searches.forEach(search => {
-            if (search.estado === 'active') counts.active++;
-            else if (search.estado === 'inactive') counts.inactive++;
-            else if (search.estado === 'closed') counts.closed++;
-        });
-
-        return counts;
-    }, [searches]);
 
     const fetchSearches = async () => {
         setLoading(true);
@@ -263,17 +240,6 @@ export default function Dashboard() {
                         className="flex-1"
                     />
 
-                    <FilterDropdown
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        options={[
-                            { value: 'all', label: 'Todos', count: statusCounts.all },
-                            { value: 'active', label: 'Activos', count: statusCounts.active },
-                            { value: 'inactive', label: 'Inactivos', count: statusCounts.inactive },
-                            { value: 'closed', label: 'Cerrados', count: statusCounts.closed }
-                        ]}
-                    />
-
                     {/* Sort Dropdown */}
                     <div className="relative">
                         <button
@@ -297,22 +263,17 @@ export default function Dashboard() {
                 </div>
 
                 {/* Results Counter */}
-                {(searchQuery || statusFilter !== 'all') && (
+                {searchQuery && (
                     <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                         <span>
                             Mostrando <span className="font-bold text-emerald-500">{filteredSearches.length}</span> de {searches.length} búsquedas
                         </span>
-                        {searchQuery && (
-                            <button
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setStatusFilter('all');
-                                }}
-                                className="text-purple-500 hover:text-purple-400 underline"
-                            >
-                                Limpiar filtros
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="text-purple-500 hover:text-purple-400 underline"
+                        >
+                            Limpiar búsqueda
+                        </button>
                     </div>
                 )}
             </div>
@@ -346,20 +307,14 @@ export default function Dashboard() {
                             <Search className="w-12 h-12 mx-auto mb-4 opacity-50 animate-pulse" />
                             <p className="text-lg mb-2">No se encontraron búsquedas</p>
                             <p className="text-sm mb-6">
-                                {searchQuery
-                                    ? `No hay resultados para "${searchQuery}"`
-                                    : `No hay búsquedas con estado "${statusFilter}"`
-                                }
+                                No hay resultados para "{searchQuery}"
                             </p>
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setStatusFilter('all');
-                                }}
+                                onClick={() => setSearchQuery('')}
                             >
-                                Limpiar filtros
+                                Limpiar búsqueda
                             </Button>
                         </GlassCard>
                     ) : (
