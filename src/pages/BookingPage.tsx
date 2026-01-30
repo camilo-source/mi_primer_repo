@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, Loader2, AlertCircle, Sparkles, Download } from 'lucide-react';
+import { playSound } from '../lib/sounds';
 
 interface Slot {
     id: string;
@@ -74,6 +75,8 @@ export default function BookingPage() {
 
             setConfirmedSlot(selectedSlot);
             setState('confirmed');
+            // Play success sound
+            playSound.success();
         } catch (err) {
             console.error(err);
             setError(err instanceof Error ? err.message : 'Error confirming slot');
@@ -172,14 +175,17 @@ export default function BookingPage() {
                                                     return (
                                                         <motion.button
                                                             key={slot.id}
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => setSelectedSlot(slot)}
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            onClick={() => {
+                                                                setSelectedSlot(slot);
+                                                                playSound.pop();
+                                                            }}
                                                             className={`
                                                                 p-3 rounded-xl border transition-all flex items-center justify-center gap-2
                                                                 ${isSelected
-                                                                    ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20'
-                                                                    : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'
+                                                                    ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30'
+                                                                    : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:shadow-lg'
                                                                 }
                                                             `}
                                                         >
@@ -245,7 +251,7 @@ export default function BookingPage() {
                         <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ delay: 0.2, type: 'spring' }}
+                            transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
                         >
                             <CheckCircle className="w-20 h-20 text-emerald-400 mx-auto mb-6" />
                         </motion.div>
@@ -253,7 +259,12 @@ export default function BookingPage() {
                         <h2 className="text-3xl font-bold text-white mb-2">¡Confirmado!</h2>
                         <p className="text-white/60 mb-8">Tu entrevista ha sido agendada</p>
 
-                        <div className="bg-emerald-500/10 rounded-2xl p-6 border border-emerald-500/20">
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="bg-emerald-500/10 rounded-2xl p-6 border border-emerald-500/20"
+                        >
                             <div className="flex items-center justify-center gap-3 text-emerald-300 mb-2">
                                 <Calendar size={20} />
                                 <span className="text-lg font-semibold">
@@ -266,9 +277,53 @@ export default function BookingPage() {
                                     {format(new Date(confirmedSlot.start_time), 'HH:mm')} hs
                                 </span>
                             </div>
-                        </div>
+                        </motion.div>
 
-                        <p className="mt-8 text-white/40 text-sm">
+                        {/* Download .ics button */}
+                        <motion.button
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                                playSound.click();
+                                // Generate .ics file
+                                const start = new Date(confirmedSlot.start_time);
+                                const end = new Date(confirmedSlot.end_time);
+                                const title = data?.searchTitle || 'Entrevista';
+
+                                const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+                                const icsContent = [
+                                    'BEGIN:VCALENDAR',
+                                    'VERSION:2.0',
+                                    'PRODID:-//GreenGlass ATS//Booking//ES',
+                                    'BEGIN:VEVENT',
+                                    `DTSTART:${formatDate(start)}`,
+                                    `DTEND:${formatDate(end)}`,
+                                    `SUMMARY:${title}`,
+                                    `DESCRIPTION:Entrevista agendada vía GreenGlass ATS`,
+                                    'STATUS:CONFIRMED',
+                                    'END:VEVENT',
+                                    'END:VCALENDAR'
+                                ].join('\r\n');
+
+                                const blob = new Blob([icsContent], { type: 'text/calendar' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'entrevista.ics';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            }}
+                            className="mt-6 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/10 hover:border-white/20 transition-all"
+                        >
+                            <Download size={18} />
+                            Agregar a mi calendario
+                        </motion.button>
+
+                        <p className="mt-6 text-white/40 text-sm">
                             Recibirás un email con los detalles de la reunión.
                         </p>
                     </motion.div>
