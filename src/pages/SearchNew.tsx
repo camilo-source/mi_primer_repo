@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../contexts/ToastContext';
+import { triggerN8nWorkflow, buildWebhookPayload } from '../lib/n8nWebhook';
 import {
     ArrowLeft,
     Briefcase,
@@ -20,23 +21,39 @@ import {
     AlertCircle,
     Star,
     X,
-    Plus
+    Plus,
+    Building,
+    Send
 } from 'lucide-react';
 
 interface FormData {
+    // Datos de la empresa
+    empresa: string;
+    rubro: string;
+    descripcion_empresa: string;
+
+    // Datos del puesto
     titulo: string;
     descripcion: string;
     habilidades_requeridas: string[];
+    habilidades_blandas: string[];
     experiencia_minima: number;
     experiencia_maxima: number;
+    nivel_formacion: string;
+
+    // Condiciones
     modalidad: 'remoto' | 'presencial' | 'hibrido';
+    disponibilidad: string;
     ubicacion: string;
     salario_min: string;
     salario_max: string;
     moneda: string;
     idiomas: { idioma: string; nivel: string }[];
+
+    // Requisitos
     requisitos_excluyentes: string[];
     requisitos_deseables: string[];
+    extras: string;
 }
 
 export default function SearchNew() {
@@ -44,24 +61,40 @@ export default function SearchNew() {
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [webhookSending, setWebhookSending] = useState(false);
     const [formData, setFormData] = useState<FormData>({
+        // Datos de empresa
+        empresa: '',
+        rubro: '',
+        descripcion_empresa: '',
+
+        // Datos del puesto
         titulo: '',
         descripcion: '',
         habilidades_requeridas: [],
+        habilidades_blandas: [],
         experiencia_minima: 0,
         experiencia_maxima: 5,
+        nivel_formacion: 'Cualquiera',
+
+        // Condiciones
         modalidad: 'remoto',
+        disponibilidad: 'Full Time',
         ubicacion: '',
         salario_min: '',
         salario_max: '',
         moneda: 'USD',
         idiomas: [],
+
+        // Requisitos
         requisitos_excluyentes: [],
-        requisitos_deseables: []
+        requisitos_deseables: [],
+        extras: ''
     });
 
     // Estado para inputs temporales
     const [newSkill, setNewSkill] = useState('');
+    const [newSoftSkill, setNewSoftSkill] = useState('');
     const [newReqExcluyente, setNewReqExcluyente] = useState('');
     const [newReqDeseable, setNewReqDeseable] = useState('');
     const [newIdioma, setNewIdioma] = useState({ idioma: '', nivel: 'B1' });
@@ -145,15 +178,15 @@ export default function SearchNew() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validar URL de n8n
-        const n8nBaseUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-        if (!n8nBaseUrl) {
-            addToast('❌ Error: URL de n8n no configurada. Contactá al administrador.', 'error');
+        // Validaciones
+        if (!formData.empresa.trim()) {
+            addToast('El nombre de la empresa es requerido', 'error');
+            setCurrentStep(1);
             return;
         }
 
         if (!formData.titulo.trim()) {
-            addToast('El título es requerido', 'error');
+            addToast('El título del puesto es requerido', 'error');
             setCurrentStep(1);
             return;
         }
@@ -165,6 +198,7 @@ export default function SearchNew() {
         }
 
         setLoading(true);
+        setWebhookSending(false);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -178,45 +212,83 @@ export default function SearchNew() {
             // Generar UUID único para la búsqueda
             const searchId = crypto.randomUUID();
 
-            // Convertir idiomas a JSON
-            const idiomasJson: Record<string, string> = {};
-            formData.idiomas.forEach(i => {
-                idiomasJson[i.idioma.toLowerCase()] = i.nivel;
-            });
+            // Convertir idiomas a array de strings
+            const idiomasArray = formData.idiomas.map(i => `${i.idioma} ${i.nivel}`);
 
+            // Guardar en Supabase
             const { error } = await supabase
                 .from('busquedas')
                 .insert({
                     id_busqueda_n8n: searchId,
                     user_id: user.id,
+                    // Datos empresa
+                    empresa: formData.empresa.trim(),
+                    rubro: formData.rubro.trim() || 'Sin especificar',
+                    descripcion_empresa: formData.descripcion_empresa.trim() || null,
+                    // Datos puesto
                     titulo: formData.titulo.trim(),
+                    nombre_del_puesto: formData.titulo.trim(),
                     descripcion: formData.descripcion.trim() || null,
-                    habilidades_requeridas: formData.habilidades_requeridas.length > 0 ? formData.habilidades_requeridas : null,
+                    habilidades_requeridas: formData.habilidades_requeridas,
+                    habilidades_blandas: formData.habilidades_blandas.length > 0 ? formData.habilidades_blandas : null,
                     experiencia_minima: formData.experiencia_minima,
                     experiencia_maxima: formData.experiencia_maxima,
+                    nivel_formacion: formData.nivel_formacion,
+                    // Condiciones
                     modalidad: formData.modalidad,
+                    disponibilidad: formData.disponibilidad,
                     ubicacion: formData.ubicacion.trim() || null,
                     salario_min: formData.salario_min ? parseInt(formData.salario_min) : null,
                     salario_max: formData.salario_max ? parseInt(formData.salario_max) : null,
                     moneda: formData.moneda,
-                    idiomas: Object.keys(idiomasJson).length > 0 ? idiomasJson : null,
+                    idiomas: idiomasArray.length > 0 ? idiomasArray : null,
+                    // Requisitos
                     requisitos_excluyentes: formData.requisitos_excluyentes.length > 0 ? formData.requisitos_excluyentes : null,
                     requisitos_deseables: formData.requisitos_deseables.length > 0 ? formData.requisitos_deseables : null,
-                    estado: 'active'
+                    extras: formData.extras.trim() || null,
+                    // Estado
+                    estado: 'active',
+                    webhook_status: 'pending'
                 });
 
             if (error) throw error;
 
-            // Construir URL de n8n con el ID
-            const n8nBaseUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-            const n8nUrl = n8nBaseUrl ? `${n8nBaseUrl}?id_busqueda_n8n=${searchId}` : '';
+            addToast('¡Búsqueda creada! Generando publicación...', 'success');
 
-            addToast('¡Búsqueda creada exitosamente!', 'success');
+            // Disparar webhook a n8n para generar publicación
+            setWebhookSending(true);
 
-            // Mostrar el panel de confirmación con el link
+            const webhookPayload = buildWebhookPayload(formData, searchId);
+            const webhookResult = await triggerN8nWorkflow(webhookPayload);
+
+            if (webhookResult.success) {
+                // Actualizar estado del webhook en DB
+                await supabase
+                    .from('busquedas')
+                    .update({
+                        webhook_status: 'sent',
+                        webhook_sent_at: new Date().toISOString()
+                    })
+                    .eq('id_busqueda_n8n', searchId);
+
+                addToast('✨ ¡Publicación en proceso! Recibirás un email cuando esté lista.', 'success');
+            } else {
+                console.warn('Webhook failed:', webhookResult.error);
+                await supabase
+                    .from('busquedas')
+                    .update({ webhook_status: 'failed' })
+                    .eq('id_busqueda_n8n', searchId);
+
+                addToast('⚠️ La búsqueda se creó pero la publicación automática falló. Podés reintentarlo después.', 'warning');
+            }
+
+            // Construir URL de postulación
+            const applicationUrl = `${window.location.origin}/apply/${searchId}`;
+
+            // Mostrar el panel de confirmación
             setCreatedSearch({
                 id: searchId,
-                n8nUrl: n8nUrl
+                n8nUrl: applicationUrl
             });
 
         } catch (error) {
@@ -224,6 +296,7 @@ export default function SearchNew() {
             addToast('Error al crear la búsqueda', 'error');
         } finally {
             setLoading(false);
+            setWebhookSending(false);
         }
     };
 
