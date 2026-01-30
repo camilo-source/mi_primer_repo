@@ -35,15 +35,16 @@ export function Sidebar() {
     return (
         <aside
             className={cn(
-                "h-screen sticky top-0 flex flex-col border-r transition-all duration-300 z-50",
-                "bg-[var(--sidebar-bg)] border-[var(--card-border)]",
+                "h-screen sticky top-0 flex flex-col transition-all duration-300 z-50",
+                "bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]",
+                "shadow-[var(--shadow-md)]",
                 collapsed ? "w-20" : "w-64"
             )}
         >
             {/* Logo */}
-            <div className="p-4 flex items-center justify-between border-b border-[var(--card-border)]">
+            <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
                 {!collapsed && (
-                    <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-400 dark:to-emerald-200 truncate">
+                    <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-[var(--brand-primary)] to-emerald-700 dark:to-emerald-200 truncate">
                         GreenGlass
                     </span>
                 )}

@@ -40,9 +40,11 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
                 ref={ref}
                 onMouseEnter={handleMouseEnter}
                 className={cn(
-                    "rounded-2xl p-6 shadow-lg backdrop-blur-xl transition-all duration-300",
+                    "relative rounded-2xl p-6 transition-all duration-300",
                     "bg-[var(--card-bg)] border border-[var(--card-border)]",
-                    hover && "cursor-pointer hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5",
+                    "shadow-[var(--card-shadow)]",
+                    "backdrop-blur-xl",
+                    hover && "cursor-pointer hover:shadow-[var(--shadow-lg)] hover:border-[var(--brand-primary)]",
                     glow && "animate-glow-pulse",
                     className
                 )}
