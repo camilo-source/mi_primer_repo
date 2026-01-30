@@ -6,6 +6,7 @@ import SearchNew from './pages/SearchNew';
 import SearchDetail from './pages/SearchDetail';
 import CalendarPage from './pages/CalendarPage';
 import BookingPage from './pages/BookingPage';
+import Apply from './pages/Apply';
 
 function App() {
   return (
@@ -13,8 +14,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
 
-        {/* Public Booking Page (Calendly-style) */}
+        {/* Public Pages */}
         <Route path="/book/:token" element={<BookingPage />} />
+        <Route path="/apply/:jobId" element={<Apply />} />
 
         {/* Protected Routes */}
         <Route element={<MainLayout />}>
