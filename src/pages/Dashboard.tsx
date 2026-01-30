@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap, ChevronDown, Database, Users, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { createMockSearch } from '../lib/seed';
+import { createDemoSearch, getDemoConfigs, type DemoType } from '../lib/seed';
 import { useToast } from '../contexts/ToastContext';
 
 interface Busqueda {
@@ -20,11 +20,24 @@ export default function Dashboard() {
     const [searches, setSearches] = useState<Busqueda[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [showDemoMenu, setShowDemoMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const { addToast } = useToast();
 
     useEffect(() => {
         fetchSearches();
+    }, []);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowDemoMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchSearches = async () => {
@@ -55,13 +68,22 @@ export default function Dashboard() {
         window.open(n8nFormUrl, '_blank');
     };
 
-    const handleMockSearch = async () => {
+    const handleCreateDemo = async (demoType: DemoType) => {
         setProcessing(true);
+        setShowDemoMenu(false);
+
         try {
-            const searchId = await createMockSearch();
+            const searchId = await createDemoSearch(demoType);
             if (searchId) {
                 await fetchSearches();
-                addToast('¡Búsqueda demo creada!', 'success');
+
+                const demoLabels = {
+                    'empty': 'Búsqueda vacía',
+                    'engineers': 'Demo Ingenieros',
+                    'real_contacts': 'Contactos reales'
+                };
+
+                addToast(`¡${demoLabels[demoType]} creada!`, 'success');
                 navigate(`/search/${searchId}`);
             }
         } catch (error) {
@@ -89,6 +111,14 @@ export default function Dashboard() {
         }
     };
 
+    const demoConfigs = getDemoConfigs();
+
+    const demoIcons = {
+        'empty': <Database size={16} />,
+        'engineers': <Users size={16} />,
+        'real_contacts': <Mail size={16} />
+    };
+
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -98,15 +128,45 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3">
-                    <Button
-                        onClick={handleMockSearch}
-                        isLoading={processing}
-                        variant="ghost"
-                        className="text-purple-600 dark:text-purple-300 hover:text-purple-700 dark:hover:text-purple-200 hover:bg-purple-500/10"
-                        icon={<Zap size={18} className={processing ? "animate-pulse" : ""} />}
-                    >
-                        Demo Search
-                    </Button>
+                    {/* Demo Dropdown */}
+                    <div className="relative" ref={menuRef}>
+                        <Button
+                            onClick={() => setShowDemoMenu(!showDemoMenu)}
+                            isLoading={processing}
+                            variant="ghost"
+                            className="text-purple-600 dark:text-purple-300 hover:text-purple-700 dark:hover:text-purple-200 hover:bg-purple-500/10"
+                            icon={<Zap size={18} className={processing ? "animate-pulse" : ""} />}
+                        >
+                            Demo
+                            <ChevronDown size={16} className={`ml-1 transition-transform ${showDemoMenu ? 'rotate-180' : ''}`} />
+                        </Button>
+
+                        {/* Dropdown Menu */}
+                        {showDemoMenu && (
+                            <div className="absolute right-0 mt-2 w-72 py-2 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] backdrop-blur-xl shadow-xl z-50">
+                                <div className="px-4 py-2 border-b border-[var(--card-border)]">
+                                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                        Selecciona tipo de demo
+                                    </p>
+                                </div>
+                                {demoConfigs.map((config) => (
+                                    <button
+                                        key={config.id}
+                                        onClick={() => handleCreateDemo(config.id)}
+                                        className="w-full px-4 py-3 text-left hover:bg-emerald-500/10 transition-colors flex items-start gap-3"
+                                    >
+                                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 flex-shrink-0">
+                                            {demoIcons[config.id]}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-[var(--text-main)]">{config.title}</p>
+                                            <p className="text-xs text-[var(--text-muted)]">{config.description}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <Button
                         onClick={handleNewSearch}
@@ -129,7 +189,17 @@ export default function Dashboard() {
                         <GlassCard className="col-span-full py-16 text-center text-[var(--text-muted)] border-dashed">
                             <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
                             <p className="text-lg mb-2">No hay búsquedas activas</p>
-                            <p className="text-sm">Hacé click en "Demo Search" para ver cómo funciona.</p>
+                            <p className="text-sm mb-6">Hacé click en "Demo" para ver las opciones disponibles.</p>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleCreateDemo('real_contacts')}
+                                    icon={<Mail size={16} />}
+                                >
+                                    Demo Contactos Reales
+                                </Button>
+                            </div>
                         </GlassCard>
                     ) : (
                         searches.map((search) => (

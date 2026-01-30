@@ -1,131 +1,116 @@
 import { supabase } from '../lib/supabase';
 
-export const seedDatabase = async () => {
-    console.log("Starting seed process...");
+// Demo Types
+export type DemoType = 'empty' | 'engineers' | 'real_contacts';
 
-    // 1. Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+interface DemoConfig {
+    id: DemoType;
+    title: string;
+    description: string;
+    searchTitle: string;
+    candidates: Array<{
+        nombre: string;
+        email: string;
+        resumen_ia: string;
+        comentarios_admin: string;
+        estado_agenda: string;
+    }>;
+}
 
-    if (!user) {
-        console.error("No user logged in. Cannot seed database.");
-        alert("Error: Debes iniciar sesión para ejecutar el seed.");
-        return;
-    }
-
-    const userId = user.id;
-    console.log("Seeding data for user:", userId);
-
-    try {
-        // 2. Ensure Profile Exists
-        const { data: profile } = await supabase
-            .from('clientes')
-            .select('id')
-            .eq('id', userId)
-            .single();
-
-        if (!profile) {
-            console.log("Creating profile for user...");
-            const { error: insertProfileError } = await supabase
-                .from('clientes')
-                .insert({
-                    id: userId, // Must match auth.users.id
-                    email: user.email,
-                    full_name: 'Test User',
-                    google_id: 'test_google_id_' + Math.random(),
-                });
-
-            if (insertProfileError && insertProfileError.code !== '23505') { // Ignore unique violation
-                console.error("Error creating profile:", insertProfileError);
-                throw insertProfileError;
-            }
-        }
-
-        // 3. Create Search (Busqueda)
-        const searchId = `search_${Math.floor(Math.random() * 10000)}`;
-        console.log("Creating search:", searchId);
-
-        const { error: searchError } = await supabase
-            .from('busquedas')
-            .insert({
-                id_busqueda_n8n: searchId,
-                user_id: userId,
-                titulo: 'Desarrollador React Senior',
-                estado: 'active'
-            });
-
-        if (searchError) throw searchError;
-
-        // 4. Create Candidates (Postulantes)
-        console.log("Creating candidates...");
-        const candidates = [
+// Demo Configurations
+const DEMO_CONFIGS: DemoConfig[] = [
+    {
+        id: 'empty',
+        title: 'Base Vacía',
+        description: 'Una búsqueda sin candidatos para empezar de cero',
+        searchTitle: 'Nueva Búsqueda (Vacía)',
+        candidates: []
+    },
+    {
+        id: 'engineers',
+        title: 'Ingeniero Informático',
+        description: '5 candidatos random para un puesto de ingeniería',
+        searchTitle: 'Ingeniero Informático Senior',
+        candidates: [
             {
-                id_busqueda_n8n: searchId,
-                nombre: 'Sofia Martinez',
-                email: 'sofia.martinez@tech.example.com',
-                resumen_ia: 'MATCH: 95%. Perfil excepcional. 6 años de experiencia en React, Node.js y arquitecturas cloud. Lideró equipos en su rol anterior.',
-                comentarios_admin: 'Entrevistar ASAP.',
+                nombre: 'Martín Rodríguez',
+                email: 'martin.rodriguez@tech.demo.com',
+                resumen_ia: 'MATCH: 94%. Ingeniero en Sistemas con 7 años de experiencia. Especializado en arquitectura de microservicios y cloud AWS. Lideró migraciones complejas.',
+                comentarios_admin: 'Excelente perfil técnico.',
                 estado_agenda: 'pending'
             },
             {
-                id_busqueda_n8n: searchId,
-                nombre: 'Lucas Vidal',
-                email: 'lucas.vidal@dev.example.com',
-                resumen_ia: 'MATCH: 88%. Muy sólido en Frontend (React/Next.js) pero con menos experiencia en Backend de la requerida. Buen fit cultural.',
+                nombre: 'Lucía Fernández',
+                email: 'lucia.fernandez@dev.demo.com',
+                resumen_ia: 'MATCH: 88%. Ingeniera en Computación con foco en Machine Learning. 5 años de experiencia, últimos 2 en startups de AI.',
                 comentarios_admin: '',
                 estado_agenda: 'pending'
             },
             {
-                id_busqueda_n8n: searchId,
-                nombre: 'Ana García',
-                email: 'ana.garcia@example.com',
-                resumen_ia: 'MATCH: 75%. Junior avanzando a Mid-level. Tiene buenos proyectos personales pero le falta experiencia en equipos grandes.',
-                comentarios_admin: 'Mantener en cartera.',
-                estado_agenda: 'contacted'
+                nombre: 'Santiago Pérez',
+                email: 'santiago.perez@code.demo.com',
+                resumen_ia: 'MATCH: 82%. Fullstack developer con experiencia en fintech. Buen manejo de Python, Go y React. Busca rol más senior.',
+                comentarios_admin: 'Evaluar expectativas salariales.',
+                estado_agenda: 'sent'
             },
             {
-                id_busqueda_n8n: searchId,
-                nombre: 'Marcos Rivas',
-                email: 'marcos.rivas@legacy.example.com',
-                resumen_ia: 'MATCH: 40%. Perfil orientado a .NET/C#. Poca experiencia verificable en stack moderno de JS.',
-                comentarios_admin: 'Descartado por stack.',
-                estado_agenda: 'rejected'
+                nombre: 'Carolina López',
+                email: 'carolina.lopez@eng.demo.com',
+                resumen_ia: 'MATCH: 75%. Ingeniera recién recibida con excelente promedio. Proyectos académicos destacados pero poca experiencia laboral.',
+                comentarios_admin: 'Junior con potencial.',
+                estado_agenda: 'pending'
             },
             {
-                id_busqueda_n8n: searchId,
-                nombre: 'Elena Torres',
-                email: 'elena.torres@ux.example.com',
-                resumen_ia: 'MATCH: 92%. Frontend Engineer con fuerte foco en UX/UI. Portfolio impresionante. Ideal para el rol de UI Lead.',
+                nombre: 'Nicolás García',
+                email: 'nicolas.garcia@backend.demo.com',
+                resumen_ia: 'MATCH: 70%. Backend developer sólido en Java y Spring. Menos experiencia en tecnologías modernas pero muy buenas referencias.',
                 comentarios_admin: '',
                 estado_agenda: 'pending'
             }
-        ];
-
-        const { error: candidatesError } = await supabase
-            .from('postulantes')
-            .insert(candidates);
-
-        if (candidatesError) throw candidatesError;
-
-        console.log("Seed completed successfully!");
-        alert("Base de datos poblada con éxito. Recarga la página.");
-
-    } catch (error) {
-        console.error("Seed failed:", error);
-        alert("Error al poblar la base de datos. Revisa la consola.");
+        ]
+    },
+    {
+        id: 'real_contacts',
+        title: 'Contactos Reales',
+        description: 'Camilo y Juan Bautista para pruebas reales de email',
+        searchTitle: 'Prueba de Scheduling Real',
+        candidates: [
+            {
+                nombre: 'Camilo Molina',
+                email: 'cami.moli.03@gmail.com',
+                resumen_ia: 'MATCH: 100%. Candidato de prueba para validar el flujo completo de scheduling con emails reales.',
+                comentarios_admin: 'TEST - Email real configurado.',
+                estado_agenda: 'pending'
+            },
+            {
+                nombre: 'Juan Bautista Gramaglia',
+                email: 'juanbag25@gmail.com',
+                resumen_ia: 'MATCH: 100%. Candidato de prueba para validar respuestas y confirmación de entrevistas.',
+                comentarios_admin: 'TEST - Email real configurado.',
+                estado_agenda: 'pending'
+            }
+        ]
     }
-};
+];
 
-export const createMockSearch = async () => {
-    console.log("Creating Mock Search...");
+export const getDemoConfigs = () => DEMO_CONFIGS;
+
+export const createDemoSearch = async (demoType: DemoType): Promise<string | null> => {
+    console.log(`Creating ${demoType} demo search...`);
+
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        alert("Error: Debes iniciar sesión para crear una búsqueda demo.");
-        return;
+        throw new Error('Debes iniciar sesión para crear una búsqueda demo.');
+    }
+
+    const config = DEMO_CONFIGS.find(c => c.id === demoType);
+    if (!config) {
+        throw new Error('Tipo de demo no válido.');
     }
 
     const userId = user.id;
-    const searchId = `demo_${Date.now()}`;
+    const searchId = `demo_${demoType}_${Date.now()}`;
 
     try {
         // 1. Create Search
@@ -134,67 +119,60 @@ export const createMockSearch = async () => {
             .insert({
                 id_busqueda_n8n: searchId,
                 user_id: userId,
-                titulo: 'DEMO: Frontend Lead (React/Next.js)',
+                titulo: config.searchTitle,
                 estado: 'active'
             });
 
         if (searchError) throw searchError;
 
-        // 2. Create Mock Candidates
-        const mockCandidates = [
-            {
-                id_busqueda_n8n: searchId,
-                nombre: 'Valentina Code',
-                email: 'valentina@demo.com',
-                resumen_ia: 'MATCH: 98%. Perfil ideal. Tech Lead en startup unicornio. Experiencia profunda en arquitectura hexagonal y testing.',
-                comentarios_admin: 'Prioridad alta.',
-                estado_agenda: 'pending'
-            },
-            {
-                id_busqueda_n8n: searchId,
-                nombre: 'Diego Dev',
-                email: 'diego@demo.com',
-                resumen_ia: 'MATCH: 85%. Muy buen nivel técnico, pero pide un salario fuera de rango. Evaluar seniority real.',
-                comentarios_admin: '',
-                estado_agenda: 'sent'
-            },
-            {
-                id_busqueda_n8n: searchId,
-                nombre: 'Carla Junior',
-                email: 'carla@demo.com',
-                resumen_ia: 'MATCH: 60%. Buenos fundamentos pero poca experiencia liderando equipos. Buen potencial a futuro.',
-                comentarios_admin: 'Keep warm.',
-                estado_agenda: 'contacted'
-            },
-            {
-                id_busqueda_n8n: searchId,
-                nombre: 'Pedro Legacy',
-                email: 'pedro@demo.com',
-                resumen_ia: 'MATCH: 30%. Experto en jQuery y PHP antiguo. No encaja con el stack moderno requerido.',
-                comentarios_admin: 'Descartado.',
-                estado_agenda: 'rejected'
-            },
-            {
-                id_busqueda_n8n: searchId,
-                nombre: 'Alex Fullstack',
-                email: 'alex@demo.com',
-                resumen_ia: 'MATCH: 92%. Sólido en Back y Front. Puede ser útil para el equipo de plataforma.',
-                comentarios_admin: '',
-                estado_agenda: 'pending'
-            }
-        ];
+        // 2. Create Candidates (if any)
+        if (config.candidates.length > 0) {
+            const candidatesWithSearchId = config.candidates.map(c => ({
+                ...c,
+                id_busqueda_n8n: searchId
+            }));
 
-        const { error: candidatesError } = await supabase
-            .from('postulantes')
-            .insert(mockCandidates);
+            const { error: candidatesError } = await supabase
+                .from('postulantes')
+                .insert(candidatesWithSearchId);
 
-        if (candidatesError) throw candidatesError;
+            if (candidatesError) throw candidatesError;
+        }
 
         return searchId;
 
     } catch (error) {
-        console.error("Mock Search creation failed:", error);
-        alert("Error creando búsqueda demo.");
+        console.error('Demo creation failed:', error);
         throw error;
+    }
+};
+
+// Legacy function for backward compatibility
+export const createMockSearch = async () => {
+    return createDemoSearch('engineers');
+};
+
+export const seedDatabase = async () => {
+    console.log("Starting seed process...");
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        console.error("No user logged in. Cannot seed database.");
+        alert("Error: Debes iniciar sesión para ejecutar el seed.");
+        return;
+    }
+
+    try {
+        // Create all demo types
+        for (const config of DEMO_CONFIGS) {
+            if (config.candidates.length > 0) {
+                await createDemoSearch(config.id);
+            }
+        }
+        console.log("Seed completed successfully!");
+        alert("Base de datos poblada con éxito. Recarga la página.");
+    } catch (error) {
+        console.error("Seed failed:", error);
+        alert("Error al poblar la base de datos. Revisa la consola.");
     }
 };
