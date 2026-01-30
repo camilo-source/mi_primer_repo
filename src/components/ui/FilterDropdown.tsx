@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Filter, ChevronDown, Check } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Check } from 'lucide-react';
 
 interface FilterOption {
     value: string;
@@ -59,7 +59,7 @@ export function FilterDropdown({
           min-w-[140px]
         "
             >
-                <Filter size={16} className="text-purple-500" />
+                <SlidersHorizontal size={16} className="text-purple-500" />
 
                 <span className="flex-1 text-left">
                     {selectedOption?.label || label}

@@ -40,27 +40,33 @@
     --color-error: #ef4444;
     --color-info: #3b82f6;
 
-    /* 💎 LIQUID GLASS EFFECTS - LIGHT MODE */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(16, 185, 129, 0.2);
-    --glass-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+    /* 💎 LIQUID GLASS EFFECTS - LIGHT MODE (enhanced shadows) */
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.12);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
     --glass-blur: blur(16px);
 
-    /* ✨ GLOWING BORDERS - LIGHT MODE */
-    --glow-primary: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
-    --glow-secondary: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
-    --glow-accent: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+    /* ✨ GLOWING BORDERS - LIGHT MODE (subtle) */
+    --glow-primary: 0 0 15px rgba(16, 185, 129, 0.25), 0 0 30px rgba(16, 185, 129, 0.1);
+    --glow-secondary: 0 0 15px rgba(139, 92, 246, 0.25), 0 0 30px rgba(139, 92, 246, 0.1);
+    --glow-accent: 0 0 15px rgba(245, 158, 11, 0.25), 0 0 30px rgba(245, 158, 11, 0.1);
 
     /* 🎭 BACKGROUNDS - LIGHT MODE */
-    --bg-primary: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
+    --bg-primary: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
     --bg-secondary: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
     --bg-gradient: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
 
-    /* 📝 TEXT COLORS - LIGHT MODE */
+    /* 📝 TEXT COLORS - LIGHT MODE (darker for better contrast) */
     --text-primary: #0f172a;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
+    --text-secondary: #1e293b;
+    --text-muted: #475569;
     --text-inverse: #ffffff;
+    --text-main: #0f172a;
+
+    /* 🃏 CARD STYLES - LIGHT MODE */
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-border: rgba(0, 0, 0, 0.1);
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
 
     /* 🍎 APPLE-STYLE EASING CURVES */
     --ease-apple: cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -104,15 +110,15 @@
     --color-info: #60a5fa;
 
     /* 💎 LIQUID GLASS EFFECTS - DARK MODE */
-    --glass-bg: rgba(15, 23, 42, 0.6);
-    --glass-border: rgba(52, 211, 153, 0.3);
-    --glass-shadow: 0 8px 32px rgba(52, 211, 153, 0.2);
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(52, 211, 153, 0.25);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1);
     --glass-blur: blur(20px);
 
     /* ✨ GLOWING BORDERS - DARK MODE */
-    --glow-primary: 0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3), inset 0 0 20px rgba(52, 211, 153, 0.1);
-    --glow-secondary: 0 0 30px rgba(167, 139, 250, 0.6), 0 0 60px rgba(167, 139, 250, 0.3), inset 0 0 20px rgba(167, 139, 250, 0.1);
-    --glow-accent: 0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 20px rgba(251, 191, 36, 0.1);
+    --glow-primary: 0 0 30px rgba(52, 211, 153, 0.5), 0 0 60px rgba(52, 211, 153, 0.25), inset 0 0 20px rgba(52, 211, 153, 0.1);
+    --glow-secondary: 0 0 30px rgba(167, 139, 250, 0.5), 0 0 60px rgba(167, 139, 250, 0.25), inset 0 0 20px rgba(167, 139, 250, 0.1);
+    --glow-accent: 0 0 30px rgba(251, 191, 36, 0.5), 0 0 60px rgba(251, 191, 36, 0.25), inset 0 0 20px rgba(251, 191, 36, 0.1);
 
     /* 🎭 BACKGROUNDS - DARK MODE */
     --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
@@ -124,6 +130,12 @@
     --text-secondary: #e2e8f0;
     --text-muted: #94a3b8;
     --text-inverse: #0f172a;
+    --text-main: #f8fafc;
+
+    /* 🃏 CARD STYLES - DARK MODE */
+    --card-bg: rgba(15, 23, 42, 0.8);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08);
   }
 }
 
