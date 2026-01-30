@@ -7,24 +7,42 @@ import { randomUUID } from 'crypto';
  * POST /api/booking/create
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { candidateId, userId } = req.body;
 
+    console.log('Booking create request:', { candidateId, userId });
+
     if (!candidateId || !userId) {
         return res.status(400).json({ error: 'candidateId and userId required' });
     }
 
+    // Check environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('Missing Supabase env vars');
+        return res.status(500).json({ error: 'Server configuration error' });
+    }
+
     try {
         const supabase = createClient(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
         // Generate unique token for this booking link
         const bookingToken = randomUUID();
+        console.log('Generated token:', bookingToken);
 
         // Get candidate info
         const { data: candidate, error: candidateError } = await supabase
@@ -33,9 +51,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .eq('id', candidateId)
             .single();
 
-        if (candidateError || !candidate) {
+        if (candidateError) {
+            console.error('Candidate fetch error:', candidateError);
+            return res.status(404).json({ error: 'Candidate not found', details: candidateError.message });
+        }
+
+        if (!candidate) {
             return res.status(404).json({ error: 'Candidate not found' });
         }
+
+        console.log('Found candidate:', candidate.nombre);
 
         // Get search info
         const { data: search } = await supabase
@@ -55,15 +80,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (updateError) {
             console.error('Update error:', updateError);
-            return res.status(500).json({ error: 'Failed to create booking link' });
+            return res.status(500).json({ error: 'Failed to create booking link', details: updateError.message });
         }
 
-        // Generate the booking URL
-        const baseUrl = process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : 'https://mi-primer-repo-seven.vercel.app';
+        // Generate the booking URL - use hardcoded production URL
+        const bookingUrl = `https://mi-primer-repo-seven.vercel.app/book/${bookingToken}`;
 
-        const bookingUrl = `${baseUrl}/book/${bookingToken}`;
+        console.log('Created booking URL:', bookingUrl);
 
         return res.status(200).json({
             success: true,

@@ -32,6 +32,8 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Not authenticated');
 
+            console.log('Creating booking for:', candidate.id);
+
             const response = await fetch('/api/booking/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -42,12 +44,17 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
             });
 
             const data = await response.json();
+            console.log('API Response:', data);
 
-            if (!response.ok) throw new Error(data.error);
+            if (!response.ok) throw new Error(data.error || 'API error');
 
-            setBookingUrl(data.bookingUrl);
-            onStatusChange(candidate.id, 'sent');
-            addToast('📅 Link de agenda generado', 'success');
+            if (data.bookingUrl) {
+                setBookingUrl(data.bookingUrl);
+                onStatusChange(candidate.id, 'sent');
+                addToast('📅 Link de agenda generado', 'success');
+            } else {
+                throw new Error('No booking URL in response');
+            }
 
         } catch (error) {
             console.error('Generate link error:', error);
