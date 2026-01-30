@@ -27,7 +27,7 @@ export function Sidebar() {
     };
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: LayoutDashboard, label: 'Panel de Control', path: '/dashboard' },
         { icon: Calendar, label: 'Calendario', path: '/calendar' },
         { icon: Settings, label: 'Ajustes', path: '/settings' },
     ];
@@ -42,18 +42,36 @@ export function Sidebar() {
             )}
         >
             {/* Logo */}
-            <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
-                {!collapsed && (
-                    <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-[var(--brand-primary)] to-emerald-700 dark:to-emerald-200 truncate">
-                        VIBE CODE
+            <div className={cn(
+                "p-4 flex items-center border-b border-[var(--sidebar-border)]",
+                collapsed ? "justify-center" : "justify-between"
+            )}>
+                {collapsed ? (
+                    <span className="font-bold text-2xl text-emerald-500">V</span>
+                ) : (
+                    <span className="font-bold text-lg">
+                        <span className="text-[var(--text-main)]">VIBE </span>
+                        <span className="text-emerald-500">CODE</span>
                     </span>
                 )}
-                <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="p-2 hover:bg-emerald-500/10 rounded-lg transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                >
-                    {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-                </button>
+                {!collapsed && (
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="p-2 hover:bg-emerald-500/10 rounded-lg transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                        title="Colapsar sidebar"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                )}
+                {collapsed && (
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="absolute right-0 top-4 translate-x-1/2 p-1.5 bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-full shadow-md hover:bg-emerald-500/10 transition-colors text-[var(--text-muted)] hover:text-emerald-500"
+                        title="Expandir sidebar"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                )}
             </div>
 
             {/* Navigation */}

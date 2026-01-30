@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { SearchBar } from '../components/ui/SearchBar';
 import { FilterDropdown } from '../components/ui/FilterDropdown';
-import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap, ChevronDown, Database, Users, Mail } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap, ChevronDown, Database, Users, Mail, Star, ArrowUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { createDemoSearch, getDemoConfigs, type DemoType } from '../lib/seed';
@@ -16,7 +16,10 @@ interface Busqueda {
     titulo: string;
     estado: string;
     created_at: string;
+    favorito?: boolean;
 }
+
+type SortOrder = 'recent' | 'oldest' | 'favorites';
 
 export default function Dashboard() {
     const [searches, setSearches] = useState<Busqueda[]>([]);
@@ -25,6 +28,7 @@ export default function Dashboard() {
     const [showDemoMenu, setShowDemoMenu] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
     const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const { addToast } = useToast();
@@ -44,9 +48,9 @@ export default function Dashboard() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Calculate filtered searches
+    // Calculate filtered and sorted searches
     const filteredSearches = useMemo(() => {
-        return searches.filter(search => {
+        let result = searches.filter(search => {
             // Filter by search query (title)
             const matchesSearch = search.titulo
                 .toLowerCase()
@@ -58,7 +62,22 @@ export default function Dashboard() {
 
             return matchesSearch && matchesStatus;
         });
-    }, [searches, searchQuery, statusFilter]);
+
+        // Sort based on sortOrder
+        if (sortOrder === 'recent') {
+            result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (sortOrder === 'oldest') {
+            result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        } else if (sortOrder === 'favorites') {
+            result.sort((a, b) => {
+                if (a.favorito && !b.favorito) return -1;
+                if (!a.favorito && b.favorito) return 1;
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+        }
+
+        return result;
+    }, [searches, searchQuery, statusFilter, sortOrder]);
 
     // Calculate counts for each status
     const statusCounts = useMemo(() => {
@@ -143,6 +162,30 @@ export default function Dashboard() {
         }
     };
 
+    const handleToggleFavorite = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        const search = searches.find(s => s.id_busqueda_n8n === id);
+        if (!search) return;
+
+        const newValue = !search.favorito;
+
+        try {
+            const { error } = await supabase
+                .from('busquedas')
+                .update({ favorito: newValue })
+                .eq('id_busqueda_n8n', id);
+
+            if (error) throw error;
+
+            setSearches(prev => prev.map(s =>
+                s.id_busqueda_n8n === id ? { ...s, favorito: newValue } : s
+            ));
+        } catch (error) {
+            console.error("Toggle favorite failed", error);
+            addToast("Error al actualizar favorito", 'error');
+        }
+    };
+
     const demoConfigs = getDemoConfigs();
 
     const demoIcons = {
@@ -157,7 +200,7 @@ export default function Dashboard() {
             <div className="space-y-4 animate-apple-slide-down">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-4xl font-bold gradient-text mb-2">Dashboard</h1>
+                        <h1 className="text-4xl font-bold gradient-text mb-2">Panel de Control</h1>
                         <p className="text-[var(--text-muted)]">Gestioná tus procesos de reclutamiento</p>
                     </div>
 
@@ -230,6 +273,27 @@ export default function Dashboard() {
                             { value: 'closed', label: 'Cerrados', count: statusCounts.closed }
                         ]}
                     />
+
+                    {/* Sort Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                const orders: SortOrder[] = ['recent', 'oldest', 'favorites'];
+                                const currentIndex = orders.indexOf(sortOrder);
+                                const nextIndex = (currentIndex + 1) % orders.length;
+                                setSortOrder(orders[nextIndex]);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-main)] text-sm hover:border-emerald-500/50 transition-colors"
+                            title="Cambiar ordenamiento"
+                        >
+                            <ArrowUpDown size={16} className="text-purple-500" />
+                            <span className="hidden sm:inline">
+                                {sortOrder === 'recent' && 'Más recientes'}
+                                {sortOrder === 'oldest' && 'Más antiguas'}
+                                {sortOrder === 'favorites' && '⭐ Favoritos'}
+                            </span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Results Counter */}
@@ -310,13 +374,27 @@ export default function Dashboard() {
                                         {search.estado === 'active' ? 'ACTIVO' : search.estado.toUpperCase()}
                                     </Badge>
 
-                                    <button
-                                        onClick={(e) => handleDelete(e, search.id_busqueda_n8n)}
-                                        className="p-2 -mr-2 -mt-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
-                                        aria-label="Eliminar búsqueda"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => handleToggleFavorite(e, search.id_busqueda_n8n)}
+                                            className={`p-2 -mt-2 rounded-full transition-all z-10 ${search.favorito
+                                                ? 'text-yellow-500 hover:text-yellow-600'
+                                                : 'text-[var(--text-muted)] hover:text-yellow-500 hover:bg-yellow-500/10'
+                                                }`}
+                                            aria-label={search.favorito ? "Quitar de favoritos" : "Agregar a favoritos"}
+                                            title={search.favorito ? "Quitar de favoritos" : "Agregar a favoritos"}
+                                        >
+                                            <Star size={16} fill={search.favorito ? "currentColor" : "none"} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDelete(e, search.id_busqueda_n8n)}
+                                            className="p-2 -mr-2 -mt-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
+                                            aria-label="Eliminar búsqueda"
+                                            title="Eliminar búsqueda"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <h3 className="text-xl font-bold text-[var(--text-main)] mb-2 line-clamp-1">

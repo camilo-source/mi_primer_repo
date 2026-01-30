@@ -50,14 +50,23 @@ export default function Landing() {
                 {/* Hero Section */}
                 <div className="text-center space-y-6 animate-apple-fade-in">
                     <div className="flex justify-center mb-6">
-                        <div className="p-6 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-inner animate-apple-glow-pulse">
-                            <Sparkles className="w-16 h-16 text-emerald-500 animate-apple-float" />
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl animate-pulse" />
+                            <div className="relative p-6 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 rounded-full border border-emerald-500/30 shadow-2xl">
+                                <Sparkles className="w-16 h-16 text-emerald-400 animate-apple-float" />
+                            </div>
                         </div>
                     </div>
 
-                    <h1 className="text-6xl md:text-7xl font-bold gradient-text mb-4">
-                        VIBE CODE ATS
-                    </h1>
+                    <div className="space-y-2">
+                        <p className="text-emerald-500 font-semibold tracking-wider uppercase text-sm">
+                            Sistema de Reclutamiento Inteligente
+                        </p>
+                        <h1 className="text-6xl md:text-8xl font-black">
+                            <span className="text-[var(--text-main)]">VIBE </span>
+                            <span className="text-emerald-500">CODE</span>
+                        </h1>
+                    </div>
 
                     <TextGenerateEffect
                         words="Revolucioná tu proceso de reclutamiento con IA"
@@ -65,8 +74,26 @@ export default function Landing() {
                     />
 
                     <p className="text-lg text-[var(--text-muted)] max-w-2xl mx-auto">
-                        Sistema de Reclutamiento Inteligente potenciado con IA para encontrar, evaluar y contratar al mejor talento más rápido que nunca
+                        Encontrá, evaluá y contratá al mejor talento más rápido que nunca con nuestro sistema potenciado por Inteligencia Artificial
                     </p>
+
+                    {/* Stats Row */}
+                    <div className="flex justify-center gap-8 pt-4">
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-emerald-500">90%</p>
+                            <p className="text-xs text-[var(--text-muted)]">Menos tiempo</p>
+                        </div>
+                        <div className="w-px bg-[var(--card-border)]" />
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-purple-500">3x</p>
+                            <p className="text-xs text-[var(--text-muted)]">Más candidatos</p>
+                        </div>
+                        <div className="w-px bg-[var(--card-border)]" />
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-amber-500">100%</p>
+                            <p className="text-xs text-[var(--text-muted)]">IA Powered</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Features Grid */}
