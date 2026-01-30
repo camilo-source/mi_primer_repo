@@ -20,6 +20,7 @@ export interface Candidate {
     estado_agenda: string;
     comentarios_admin: string;
     fecha_entrevista?: string;
+    booking_token?: string;
 }
 
 interface CandidateTableProps {

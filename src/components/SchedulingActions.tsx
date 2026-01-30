@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { Link2, Copy, CheckCircle, Calendar, ExternalLink, Mail } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useToast } from '../contexts/ToastContext';
@@ -18,6 +17,14 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
     const [bookingUrl, setBookingUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const { addToast } = useToast();
+
+    // Check if there's already a booking token
+    useEffect(() => {
+        if (candidate.booking_token) {
+            const baseUrl = window.location.origin;
+            setBookingUrl(`${baseUrl}/book/${candidate.booking_token}`);
+        }
+    }, [candidate.booking_token]);
 
     const handleGenerateLink = async () => {
         setLoading(true);
@@ -56,7 +63,7 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         try {
             await navigator.clipboard.writeText(bookingUrl);
             setCopied(true);
-            addToast('📋 Link copiado al portapapeles', 'success');
+            addToast('📋 Link copiado', 'success');
             setTimeout(() => setCopied(false), 2000);
         } catch {
             addToast('Error al copiar', 'error');
@@ -69,8 +76,8 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         const subject = encodeURIComponent('Agenda tu entrevista');
         const body = encodeURIComponent(
             `Hola ${candidate.nombre},\n\n` +
-            `¡Gracias por tu interés en la posición!\n\n` +
-            `Por favor, seleccioná el horario que mejor te quede para la entrevista:\n\n` +
+            `¡Gracias por tu interés!\n\n` +
+            `Seleccioná el horario que mejor te quede:\n\n` +
             `${bookingUrl}\n\n` +
             `Saludos`
         );
@@ -78,131 +85,97 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
         window.open(`mailto:${candidate.email}?subject=${subject}&body=${body}`, '_blank');
     };
 
-    // Render based on current status
-    const renderActionByStatus = () => {
-        switch (candidate.estado_agenda) {
-            case 'pending':
-            case undefined:
-            case null:
-                return (
-                    <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={handleGenerateLink}
-                        isLoading={loading}
-                        icon={<Calendar size={14} />}
-                        className="w-full"
-                    >
-                        Generar Link de Agenda
-                    </Button>
-                );
-
-            case 'sent':
-                return (
-                    <div className="space-y-2">
-                        {bookingUrl ? (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="space-y-2"
-                            >
-                                <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                                    <p className="text-[10px] text-emerald-400 mb-1 font-medium">Link generado:</p>
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            type="text"
-                                            value={bookingUrl}
-                                            readOnly
-                                            className="flex-1 text-[10px] bg-transparent text-[var(--text-muted)] truncate outline-none"
-                                        />
-                                        <button
-                                            onClick={handleCopyLink}
-                                            className="p-1 hover:bg-white/10 rounded transition-colors"
-                                            title="Copiar link"
-                                        >
-                                            {copied ? (
-                                                <CheckCircle size={12} className="text-emerald-400" />
-                                            ) : (
-                                                <Copy size={12} className="text-[var(--text-muted)]" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={handleCopyLink}
-                                        icon={copied ? <CheckCircle size={12} /> : <Copy size={12} />}
-                                        className="text-xs"
-                                    >
-                                        {copied ? 'Copiado' : 'Copiar'}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={handleSendEmail}
-                                        icon={<Mail size={12} />}
-                                        className="text-xs"
-                                    >
-                                        Enviar
-                                    </Button>
-                                </div>
-
-                                <a
-                                    href={bookingUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                                >
-                                    <ExternalLink size={10} />
-                                    Ver página de agenda
-                                </a>
-                            </motion.div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-blue-400 text-xs p-2 bg-blue-500/10 rounded-lg">
-                                <Link2 size={12} />
-                                <span>Link enviado - esperando selección</span>
-                            </div>
+    // CONFIRMED STATE
+    if (candidate.estado_agenda === 'confirmed') {
+        return (
+            <div className="mt-3">
+                <div className="flex items-center gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <CheckCircle size={18} className="text-emerald-400 flex-shrink-0" />
+                    <div className="text-xs">
+                        <span className="font-bold text-emerald-400 block">✓ Confirmado</span>
+                        {candidate.fecha_entrevista && (
+                            <span className="text-emerald-300/70">
+                                {format(new Date(candidate.fecha_entrevista), "EEEE d MMM, HH:mm", { locale: es })}
+                            </span>
                         )}
                     </div>
-                );
+                </div>
+            </div>
+        );
+    }
 
-            case 'confirmed':
-                return (
-                    <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                        <CheckCircle size={16} className="text-emerald-400" />
-                        <div className="text-xs text-emerald-400">
-                            <span className="font-medium">Confirmado</span>
-                            {candidate.fecha_entrevista && (
-                                <span className="block text-emerald-500/70">
-                                    {format(new Date(candidate.fecha_entrevista), "d MMM, HH:mm", { locale: es })}
-                                </span>
-                            )}
-                        </div>
+    // SENT STATE - Link already generated
+    if (candidate.estado_agenda === 'sent' || bookingUrl) {
+        return (
+            <div className="mt-3 space-y-2">
+                <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="flex items-center gap-2 text-blue-400 text-[10px] font-medium mb-1">
+                        <Link2 size={10} />
+                        Link de agenda:
                     </div>
-                );
+                    <div className="flex items-center gap-1 bg-black/20 rounded p-1">
+                        <input
+                            type="text"
+                            value={bookingUrl || ''}
+                            readOnly
+                            className="flex-1 text-[9px] bg-transparent text-white/60 truncate outline-none font-mono"
+                        />
+                        <button
+                            onClick={handleCopyLink}
+                            className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+                        >
+                            {copied ? (
+                                <CheckCircle size={12} className="text-emerald-400" />
+                            ) : (
+                                <Copy size={12} className="text-white/40" />
+                            )}
+                        </button>
+                    </div>
+                </div>
 
-            default:
-                return (
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={handleGenerateLink}
-                        isLoading={loading}
-                        icon={<Calendar size={14} />}
-                        className="w-full"
+                <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                        onClick={handleCopyLink}
+                        className="flex items-center justify-center gap-1 py-1.5 px-2 text-[10px] font-medium rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 transition-colors"
                     >
-                        Generar Link
-                    </Button>
-                );
-        }
-    };
+                        {copied ? <CheckCircle size={10} /> : <Copy size={10} />}
+                        {copied ? 'Copiado!' : 'Copiar'}
+                    </button>
+                    <button
+                        onClick={handleSendEmail}
+                        className="flex items-center justify-center gap-1 py-1.5 px-2 text-[10px] font-medium rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 transition-colors"
+                    >
+                        <Mail size={10} />
+                        Enviar Email
+                    </button>
+                </div>
 
+                <a
+                    href={bookingUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1 text-[10px] text-white/40 hover:text-emerald-400 transition-colors py-1"
+                >
+                    <ExternalLink size={10} />
+                    Ver página
+                </a>
+            </div>
+        );
+    }
+
+    // PENDING/DEFAULT STATE - Generate link button
     return (
         <div className="mt-3">
-            {renderActionByStatus()}
+            <Button
+                size="sm"
+                variant="primary"
+                onClick={handleGenerateLink}
+                isLoading={loading}
+                icon={<Calendar size={14} />}
+                className="w-full"
+            >
+                Generar Link de Agenda
+            </Button>
         </div>
     );
 }
