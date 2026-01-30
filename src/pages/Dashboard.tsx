@@ -114,11 +114,12 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-8">
+            {/* Header with animations */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-apple-slide-down">
                 <div>
-                    <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">Dashboard</h1>
-                    <p className="text-[var(--text-muted)]">Gestiona tus procesos de reclutamiento</p>
+                    <h1 className="text-4xl font-bold gradient-text mb-2">Dashboard</h1>
+                    <p className="text-[var(--text-muted)]">Gestioná tus procesos de reclutamiento</p>
                 </div>
 
                 <div className="flex gap-3">
