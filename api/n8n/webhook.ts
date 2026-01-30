@@ -16,48 +16,60 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  * Método: POST
  * URL: https://tu-dominio.vercel.app/api/n8n/webhook
  * 
+ * Headers permitidos:
+ * - Content-Type: application/json
+ * - Authorization: Bearer <token> (opcional - si se configura N8N_WEBHOOK_SECRET)
+ * 
  * Body esperado:
  * {
  *   "id_busqueda_n8n": "uuid-de-la-busqueda",
- *   "candidatos": [
- *     {
- *       "nombre": "Juan Pérez",
- *       "email": "juan@example.com",
- *       "telefono": "+54 11 1234-5678",
- *       "linkedin": "https://linkedin.com/in/juanperez",
- *       "cv_url": "https://storage.com/cv.pdf",
- *       "resumen_ia": "Desarrollador Full Stack con 5 años...",
- *       "score_ia": 85,
- *       "habilidades": ["React", "Node.js", "TypeScript"],
- *       "experiencia_anos": 5,
- *       "ubicacion": "Buenos Aires, Argentina"
- *     }
- *   ]
+ *   "candidato": {
+ *     "nombre": "Juan Pérez",
+ *     "email": "juan@example.com",
+ *     "resumen_ia": "Desarrollador Full Stack con 5 años...",
+ *     "score_ia": 85
+ *   }
+ * }
+ * 
+ * O formato batch:
+ * {
+ *   "id_busqueda_n8n": "uuid-de-la-busqueda",
+ *   "candidatos": [...]
  * }
  */
 
 interface Candidato {
     nombre: string;
     email: string;
-    telefono?: string;
-    linkedin?: string;
-    cv_url?: string;
     resumen_ia?: string;
     score_ia?: number;
-    habilidades?: string[];
-    experiencia_anos?: number;
-    ubicacion?: string;
 }
 
 interface WebhookPayload {
     id_busqueda_n8n: string;
-    candidatos: Candidato[];
+    candidato?: Candidato;  // Single candidate
+    candidatos?: Candidato[]; // Batch of candidates
+}
+
+// Configurar CORS para permitir requests desde n8n
+function setCorsHeaders(res: VercelResponse) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
 export default async function handler(
     req: VercelRequest,
     res: VercelResponse
 ) {
+    // Configurar CORS
+    setCorsHeaders(res);
+
+    // Manejar preflight OPTIONS
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     // Solo permitir POST
     if (req.method !== 'POST') {
         return res.status(405).json({
@@ -66,8 +78,22 @@ export default async function handler(
         });
     }
 
+    // Verificar autenticación opcional (si está configurada)
+    const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
+    if (webhookSecret) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || authHeader !== `Bearer ${webhookSecret}`) {
+            return res.status(401).json({
+                success: false,
+                error: 'Autenticación inválida'
+            });
+        }
+    }
+
     try {
         const payload: WebhookPayload = req.body;
+
+        console.log('📥 Webhook recibido:', JSON.stringify(payload, null, 2));
 
         // Validar payload
         if (!payload.id_busqueda_n8n) {
@@ -77,14 +103,21 @@ export default async function handler(
             });
         }
 
-        if (!payload.candidatos || !Array.isArray(payload.candidatos)) {
+        // Normalizar: aceptar tanto "candidato" (single) como "candidatos" (array)
+        let candidatos: Candidato[] = [];
+
+        if (payload.candidato) {
+            candidatos = [payload.candidato];
+        } else if (payload.candidatos && Array.isArray(payload.candidatos)) {
+            candidatos = payload.candidatos;
+        } else {
             return res.status(400).json({
                 success: false,
-                error: 'Falta array de candidatos'
+                error: 'Falta candidato o candidatos en el payload'
             });
         }
 
-        if (payload.candidatos.length === 0) {
+        if (candidatos.length === 0) {
             return res.status(400).json({
                 success: false,
                 error: 'Array de candidatos vacío'
@@ -99,34 +132,29 @@ export default async function handler(
             .single();
 
         if (busquedaError || !busqueda) {
+            console.error('❌ Búsqueda no encontrada:', payload.id_busqueda_n8n);
             return res.status(404).json({
                 success: false,
                 error: `Búsqueda no encontrada: ${payload.id_busqueda_n8n}`
             });
         }
 
-        console.log(`📥 Recibiendo ${payload.candidatos.length} candidatos para búsqueda: ${busqueda.titulo}`);
+        console.log(`📥 Procesando ${candidatos.length} candidato(s) para búsqueda: ${busqueda.titulo}`);
 
-        // Preparar candidatos para inserción
-        const candidatosParaInsertar = payload.candidatos.map(candidato => ({
+        // Preparar candidatos para inserción (solo campos que existen en tabla postulantes)
+        const candidatosParaInsertar = candidatos.map(candidato => ({
             id_busqueda_n8n: payload.id_busqueda_n8n,
-            nombre: candidato.nombre,
-            email: candidato.email,
-            telefono: candidato.telefono || null,
-            linkedin: candidato.linkedin || null,
-            cv_url: candidato.cv_url || null,
+            nombre: candidato.nombre || 'Sin nombre',
+            email: candidato.email || 'sin@email.com',
             resumen_ia: candidato.resumen_ia || null,
             score_ia: candidato.score_ia || null,
-            habilidades: candidato.habilidades || [],
-            experiencia_anos: candidato.experiencia_anos || null,
-            ubicacion: candidato.ubicacion || null,
-            estado: 'nuevo', // Estado inicial
-            created_at: new Date().toISOString()
+            estado_agenda: 'pending',
+            comentarios_admin: null
         }));
 
-        // Insertar candidatos en batch
+        // Insertar candidatos en tabla POSTULANTES (no candidatos)
         const { data: candidatosInsertados, error: insertError } = await supabase
-            .from('candidatos')
+            .from('postulantes')
             .insert(candidatosParaInsertar)
             .select();
 
@@ -139,31 +167,18 @@ export default async function handler(
             });
         }
 
-        console.log(`✅ ${candidatosInsertados?.length || 0} candidatos guardados exitosamente`);
-
-        // Actualizar estado de la búsqueda
-        const { error: updateError } = await supabase
-            .from('busquedas')
-            .update({
-                estado: 'activa',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id_busqueda_n8n', payload.id_busqueda_n8n);
-
-        if (updateError) {
-            console.error('⚠️ Error actualizando estado de búsqueda:', updateError);
-        }
+        console.log(`✅ ${candidatosInsertados?.length || 0} candidato(s) guardado(s) exitosamente`);
 
         // Respuesta exitosa
         return res.status(200).json({
             success: true,
-            message: `${candidatosInsertados?.length || 0} candidatos procesados exitosamente`,
+            message: `${candidatosInsertados?.length || 0} candidato(s) procesado(s) exitosamente`,
             data: {
                 busqueda_id: payload.id_busqueda_n8n,
                 busqueda_titulo: busqueda.titulo,
                 candidatos_insertados: candidatosInsertados?.length || 0,
                 candidatos: candidatosInsertados?.map(c => ({
-                    id: c.id_candidato,
+                    id: c.id,
                     nombre: c.nombre,
                     email: c.email,
                     score: c.score_ia

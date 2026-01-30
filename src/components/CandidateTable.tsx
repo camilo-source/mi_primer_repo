@@ -17,6 +17,7 @@ export interface Candidate {
     nombre: string;
     email: string;
     resumen_ia: string;
+    score_ia?: number;
     estado_agenda: string;
     comentarios_admin: string;
     fecha_entrevista?: string;
@@ -75,6 +76,38 @@ export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateT
                     {info.getValue()}
                 </div>
             ),
+        }),
+        columnHelper.accessor('score_ia', {
+            header: ({ column }) => {
+                return (
+                    <button
+                        className="flex items-center gap-2 hover:text-white transition-colors"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                    >
+                        Score
+                        <ArrowUpDown size={14} className="opacity-50" />
+                    </button>
+                )
+            },
+            cell: (info) => {
+                const score = info.getValue();
+                if (!score && score !== 0) return <span className="text-white/30">N/A</span>;
+
+                // Color basado en el score
+                let colorClass = 'text-white/50';
+                if (score >= 80) colorClass = 'text-emerald-400';
+                else if (score >= 60) colorClass = 'text-amber-400';
+                else colorClass = 'text-red-400';
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className={`text-2xl font-bold ${colorClass}`}>
+                            {score}
+                        </div>
+                        <div className="text-xs text-white/30">/100</div>
+                    </div>
+                );
+            },
         }),
         columnHelper.accessor('resumen_ia', {
             header: 'AI Summary',

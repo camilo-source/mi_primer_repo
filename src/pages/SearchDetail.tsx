@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -27,9 +27,89 @@ export default function SearchDetail() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState<{ id: string, name: string } | null>(null);
 
+    // Ordenar candidatos por score (mayor a menor)
+    const sortedCandidates = useMemo(() => {
+        return [...candidates].sort((a, b) => {
+            return (b.score_ia || 0) - (a.score_ia || 0);
+        });
+    }, [candidates]);
+
     useEffect(() => {
         if (id) fetchData();
     }, [id]);
+
+    // 🔄 REALTIME: Suscripción a cambios en tiempo real
+    useEffect(() => {
+        if (!id) return;
+
+        console.log('🔄 Configurando Realtime para búsqueda:', id);
+
+        const channel = supabase
+            .channel(`postulantes:${id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'postulantes',
+                    filter: `id_busqueda_n8n=eq.${id}`
+                },
+                (payload) => {
+                    console.log('🆕 Nuevo candidato recibido:', payload.new);
+
+                    // Agregar candidato a la lista
+                    setCandidates(prev => [...prev, payload.new as Candidate]);
+
+                    // Mostrar notificación
+                    const newCandidate = payload.new as Candidate;
+                    addToast(
+                        `🎉 Nuevo candidato: ${newCandidate.nombre} (Score: ${newCandidate.score_ia || 'N/A'})`,
+                        'success'
+                    );
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'postulantes',
+                    filter: `id_busqueda_n8n=eq.${id}`
+                },
+                (payload) => {
+                    console.log('✏️ Candidato actualizado:', payload.new);
+
+                    // Actualizar candidato en la lista
+                    setCandidates(prev =>
+                        prev.map(c => c.id === payload.new.id ? payload.new as Candidate : c)
+                    );
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'postulantes',
+                    filter: `id_busqueda_n8n=eq.${id}`
+                },
+                (payload) => {
+                    console.log('🗑️ Candidato eliminado:', payload.old);
+
+                    // Remover candidato de la lista
+                    setCandidates(prev => prev.filter(c => c.id !== payload.old.id));
+                }
+            )
+            .subscribe((status) => {
+                console.log('📡 Estado de Realtime:', status);
+            });
+
+        // Cleanup al desmontar
+        return () => {
+            console.log('🔌 Desconectando Realtime');
+            supabase.removeChannel(channel);
+        };
+    }, [id, addToast]);
 
     const fetchData = async () => {
         try {
@@ -197,14 +277,14 @@ export default function SearchDetail() {
             {/* Candidates View */}
             {viewMode === 'kanban' ? (
                 <KanbanBoard
-                    candidates={candidates}
+                    candidates={sortedCandidates}
                     onStatusChange={handleStatusChange}
                     onSchedule={handleOpenSchedule}
                 />
             ) : (
                 <div className="rounded-2xl overflow-hidden border border-[var(--card-border)] bg-[var(--card-bg)]">
                     <CandidateTable
-                        data={candidates}
+                        data={sortedCandidates}
                         onUpdateComment={handleUpdateComment}
                         onSchedule={handleOpenSchedule}
                     />

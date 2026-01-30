@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { SearchBar } from '../components/ui/SearchBar';
+import { FilterDropdown } from '../components/ui/FilterDropdown';
 import { Plus, Search, Calendar as CalendarIcon, Trash2, Zap, ChevronDown, Database, Users, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -21,6 +23,8 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [showDemoMenu, setShowDemoMenu] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const { addToast } = useToast();
@@ -39,6 +43,40 @@ export default function Dashboard() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Calculate filtered searches
+    const filteredSearches = useMemo(() => {
+        return searches.filter(search => {
+            // Filter by search query (title)
+            const matchesSearch = search.titulo
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase());
+
+            // Filter by status
+            const matchesStatus = statusFilter === 'all' ||
+                search.estado === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [searches, searchQuery, statusFilter]);
+
+    // Calculate counts for each status
+    const statusCounts = useMemo(() => {
+        const counts = {
+            all: searches.length,
+            active: 0,
+            inactive: 0,
+            closed: 0
+        };
+
+        searches.forEach(search => {
+            if (search.estado === 'active') counts.active++;
+            else if (search.estado === 'inactive') counts.inactive++;
+            else if (search.estado === 'closed') counts.closed++;
+        });
+
+        return counts;
+    }, [searches]);
 
     const fetchSearches = async () => {
         setLoading(true);
@@ -116,60 +154,103 @@ export default function Dashboard() {
     return (
         <div className="space-y-8">
             {/* Header with animations */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-apple-slide-down">
-                <div>
-                    <h1 className="text-4xl font-bold gradient-text mb-2">Dashboard</h1>
-                    <p className="text-[var(--text-muted)]">Gestioná tus procesos de reclutamiento</p>
-                </div>
-
-                <div className="flex gap-3">
-                    {/* Demo Dropdown */}
-                    <div className="relative" ref={menuRef}>
-                        <Button
-                            onClick={() => setShowDemoMenu(!showDemoMenu)}
-                            isLoading={processing}
-                            variant="ghost"
-                            className="text-purple-600 dark:text-purple-300 hover:text-purple-700 dark:hover:text-purple-200 hover:bg-purple-500/10"
-                            icon={<Zap size={18} className={processing ? "animate-pulse" : ""} />}
-                        >
-                            Demo
-                            <ChevronDown size={16} className={`ml-1 transition-transform ${showDemoMenu ? 'rotate-180' : ''}`} />
-                        </Button>
-
-                        {/* Dropdown Menu */}
-                        {showDemoMenu && (
-                            <div className="absolute right-0 mt-2 w-72 py-2 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] backdrop-blur-xl shadow-xl z-50">
-                                <div className="px-4 py-2 border-b border-[var(--card-border)]">
-                                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                                        Selecciona tipo de demo
-                                    </p>
-                                </div>
-                                {demoConfigs.map((config) => (
-                                    <button
-                                        key={config.id}
-                                        onClick={() => handleCreateDemo(config.id)}
-                                        className="w-full px-4 py-3 text-left hover:bg-emerald-500/10 transition-colors flex items-start gap-3"
-                                    >
-                                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 flex-shrink-0">
-                                            {demoIcons[config.id]}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-[var(--text-main)]">{config.title}</p>
-                                            <p className="text-xs text-[var(--text-muted)]">{config.description}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+            <div className="space-y-4 animate-apple-slide-down">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-4xl font-bold gradient-text mb-2">Dashboard</h1>
+                        <p className="text-[var(--text-muted)]">Gestioná tus procesos de reclutamiento</p>
                     </div>
 
-                    <Button
-                        onClick={handleNewSearch}
-                        icon={<Plus size={20} />}
-                    >
-                        Nueva Búsqueda
-                    </Button>
+                    <div className="flex gap-3">
+                        {/* Demo Dropdown */}
+                        <div className="relative" ref={menuRef}>
+                            <Button
+                                onClick={() => setShowDemoMenu(!showDemoMenu)}
+                                isLoading={processing}
+                                variant="ghost"
+                                className="text-purple-600 dark:text-purple-300 hover:text-purple-700 dark:hover:text-purple-200 hover:bg-purple-500/10"
+                                icon={<Zap size={18} className={processing ? "animate-pulse" : ""} />}
+                            >
+                                Demo
+                                <ChevronDown size={16} className={`ml-1 transition-transform ${showDemoMenu ? 'rotate-180' : ''}`} />
+                            </Button>
+
+                            {/* Dropdown Menu */}
+                            {showDemoMenu && (
+                                <div className="absolute right-0 mt-2 w-72 py-2 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] backdrop-blur-xl shadow-xl z-50">
+                                    <div className="px-4 py-2 border-b border-[var(--card-border)]">
+                                        <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                            Selecciona tipo de demo
+                                        </p>
+                                    </div>
+                                    {demoConfigs.map((config) => (
+                                        <button
+                                            key={config.id}
+                                            onClick={() => handleCreateDemo(config.id)}
+                                            className="w-full px-4 py-3 text-left hover:bg-emerald-500/10 transition-colors flex items-start gap-3"
+                                        >
+                                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 flex-shrink-0">
+                                                {demoIcons[config.id]}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-[var(--text-main)]">{config.title}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">{config.description}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <Button
+                            onClick={handleNewSearch}
+                            icon={<Plus size={20} />}
+                        >
+                            Nueva Búsqueda
+                        </Button>
+                    </div>
                 </div>
+
+                {/* Search and Filter Bar */}
+                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                    <SearchBar
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Buscar búsquedas por título..."
+                        className="flex-1"
+                    />
+
+                    <FilterDropdown
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        options={[
+                            { value: 'all', label: 'Todos', count: statusCounts.all },
+                            { value: 'active', label: 'Activos', count: statusCounts.active },
+                            { value: 'inactive', label: 'Inactivos', count: statusCounts.inactive },
+                            { value: 'closed', label: 'Cerrados', count: statusCounts.closed }
+                        ]}
+                    />
+                </div>
+
+                {/* Results Counter */}
+                {(searchQuery || statusFilter !== 'all') && (
+                    <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                        <span>
+                            Mostrando <span className="font-bold text-emerald-500">{filteredSearches.length}</span> de {searches.length} búsquedas
+                        </span>
+                        {searchQuery && (
+                            <button
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setStatusFilter('all');
+                                }}
+                                className="text-purple-500 hover:text-purple-400 underline"
+                            >
+                                Limpiar filtros
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {loading ? (
@@ -196,11 +277,32 @@ export default function Dashboard() {
                                 </Button>
                             </div>
                         </GlassCard>
+                    ) : filteredSearches.length === 0 ? (
+                        <GlassCard className="col-span-full py-16 text-center text-[var(--text-muted)] border-dashed">
+                            <Search className="w-12 h-12 mx-auto mb-4 opacity-50 animate-pulse" />
+                            <p className="text-lg mb-2">No se encontraron búsquedas</p>
+                            <p className="text-sm mb-6">
+                                {searchQuery
+                                    ? `No hay resultados para "${searchQuery}"`
+                                    : `No hay búsquedas con estado "${statusFilter}"`
+                                }
+                            </p>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setStatusFilter('all');
+                                }}
+                            >
+                                Limpiar filtros
+                            </Button>
+                        </GlassCard>
                     ) : (
-                        searches.map((search) => (
+                        filteredSearches.map((search) => (
                             <GlassCard
                                 key={search.id_busqueda_n8n}
-                                className="group cursor-pointer glass-hover relative"
+                                className="group cursor-pointer glass-hover relative animate-scale-in"
                                 onClick={() => navigate(`/search/${search.id_busqueda_n8n}`)}
                             >
                                 <div className="flex justify-between items-start mb-4">
@@ -211,6 +313,7 @@ export default function Dashboard() {
                                     <button
                                         onClick={(e) => handleDelete(e, search.id_busqueda_n8n)}
                                         className="p-2 -mr-2 -mt-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
+                                        aria-label="Eliminar búsqueda"
                                     >
                                         <Trash2 size={16} />
                                     </button>

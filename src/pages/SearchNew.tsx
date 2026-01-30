@@ -4,17 +4,23 @@ import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../contexts/ToastContext';
-import { ArrowLeft, Briefcase, FileText, Sparkles, ExternalLink, Zap } from 'lucide-react';
+import { ArrowLeft, Briefcase, FileText, Zap, Copy, ExternalLink, Check } from 'lucide-react';
 
 export default function SearchNew() {
     const navigate = useNavigate();
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({
         titulo: '',
         descripcion: ''
     });
+
+    // Estado post-creación
+    const [createdSearch, setCreatedSearch] = useState<{
+        id: string;
+        n8nUrl: string;
+    } | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,7 +41,8 @@ export default function SearchNew() {
                 return;
             }
 
-            const searchId = `search_${Date.now()}`;
+            // Generar UUID único para la búsqueda
+            const searchId = crypto.randomUUID();
 
             const { error } = await supabase
                 .from('busquedas')
@@ -43,14 +50,23 @@ export default function SearchNew() {
                     id_busqueda_n8n: searchId,
                     user_id: user.id,
                     titulo: formData.titulo.trim(),
-                    descripcion: formData.descripcion.trim() || null,
                     estado: 'active'
                 });
 
             if (error) throw error;
 
+            // Construir URL de n8n con el ID
+            const n8nBaseUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+            const n8nUrl = n8nBaseUrl ? `${n8nBaseUrl}?id_busqueda_n8n=${searchId}` : '';
+
             addToast('¡Búsqueda creada exitosamente!', 'success');
-            navigate(`/search/${searchId}`);
+
+            // Mostrar el panel de confirmación con el link
+            setCreatedSearch({
+                id: searchId,
+                n8nUrl: n8nUrl
+            });
+
         } catch (error) {
             console.error('Error creating search:', error);
             addToast('Error al crear la búsqueda', 'error');
@@ -59,159 +75,224 @@ export default function SearchNew() {
         }
     };
 
-    const handleN8nRedirect = () => {
-        const n8nUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-        if (n8nUrl) {
-            window.open(n8nUrl, '_blank');
-        } else {
-            addToast('URL de n8n no configurada', 'error');
+    const handleCopyLink = async () => {
+        if (!createdSearch?.n8nUrl) return;
+
+        try {
+            await navigator.clipboard.writeText(createdSearch.n8nUrl);
+            setCopied(true);
+            addToast('Link copiado al portapapeles', 'success');
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            addToast('Error al copiar', 'error');
         }
     };
 
-    if (showForm) {
+    const handleOpenN8n = () => {
+        if (createdSearch?.n8nUrl) {
+            window.open(createdSearch.n8nUrl, '_blank');
+        }
+    };
+
+    const handleGoToDashboard = () => {
+        navigate('/dashboard');
+    };
+
+    const handleGoToSearch = () => {
+        if (createdSearch?.id) {
+            navigate(`/search/${createdSearch.id}`);
+        }
+    };
+
+    // Vista de confirmación post-creación
+    if (createdSearch) {
         return (
             <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setShowForm(false)}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-bold text-[var(--text-main)]">Crear Búsqueda</h1>
-                        <p className="text-[var(--text-muted)]">Completá los detalles de la búsqueda</p>
+                {/* Success Header */}
+                <div className="text-center space-y-4">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30 mb-4">
+                        <Check className="w-10 h-10 text-emerald-500" />
                     </div>
+                    <h1 className="text-3xl font-bold text-[var(--text-main)]">¡Búsqueda Creada!</h1>
+                    <p className="text-[var(--text-muted)]">
+                        Tu búsqueda <strong className="text-emerald-500">"{formData.titulo}"</strong> ha sido creada exitosamente.
+                    </p>
                 </div>
 
-                {/* Form Card */}
+                {/* ID Card */}
                 <GlassCard className="relative overflow-hidden">
-                    {/* Decorative gradient */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-emerald-500/5 rounded-full blur-3xl" />
 
-                    <form onSubmit={handleSubmit} className="relative space-y-6">
-                        {/* Title Field */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-main)]">
-                                <Briefcase size={16} className="text-emerald-500" />
-                                Título del puesto
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.titulo}
-                                onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
-                                placeholder="ej: Desarrollador Full Stack Senior"
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                                autoFocus
-                            />
+                    <div className="relative space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-muted)]">
+                            <Zap size={16} className="text-purple-500" />
+                            ID de la Búsqueda
                         </div>
 
-                        {/* Description Field */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-main)]">
-                                <FileText size={16} className="text-emerald-500" />
-                                Descripción
-                                <span className="text-[var(--text-muted)] font-normal">(opcional)</span>
-                            </label>
-                            <textarea
-                                value={formData.descripcion}
-                                onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
-                                placeholder="Describe los requisitos, responsabilidades y cualquier detalle relevante..."
-                                rows={4}
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
-                            />
+                        <div className="p-4 rounded-xl bg-black/20 border border-white/10 font-mono text-sm text-emerald-400 break-all">
+                            {createdSearch.id}
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setShowForm(false)}
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                type="submit"
-                                isLoading={loading}
-                            >
-                                Crear Búsqueda
-                            </Button>
-                        </div>
-                    </form>
+                        <p className="text-xs text-[var(--text-muted)]">
+                            Este ID identifica tu búsqueda y vincula los candidatos que se postulen.
+                        </p>
+                    </div>
                 </GlassCard>
+
+                {/* n8n Link Card */}
+                <GlassCard className="relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/5 rounded-full blur-3xl" />
+
+                    <div className="relative space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-muted)]">
+                            <ExternalLink size={16} className="text-blue-500" />
+                            Link del Formulario n8n
+                        </div>
+
+                        {createdSearch.n8nUrl ? (
+                            <>
+                                <div className="p-4 rounded-xl bg-black/20 border border-white/10 font-mono text-xs text-blue-400 break-all">
+                                    {createdSearch.n8nUrl}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <Button
+                                        onClick={handleCopyLink}
+                                        variant="secondary"
+                                        icon={copied ? <Check size={16} /> : <Copy size={16} />}
+                                        className="flex-1"
+                                    >
+                                        {copied ? 'Copiado!' : 'Copiar Link'}
+                                    </Button>
+                                    <Button
+                                        onClick={handleOpenN8n}
+                                        icon={<ExternalLink size={16} />}
+                                        className="flex-1"
+                                    >
+                                        Abrir Formulario
+                                    </Button>
+                                </div>
+
+                                <p className="text-xs text-[var(--text-muted)]">
+                                    Compartí este link con los candidatos o usalo para iniciar el flujo de postulación en n8n.
+                                </p>
+                            </>
+                        ) : (
+                            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+                                ⚠️ URL de n8n no configurada. Agregá <code>VITE_N8N_WEBHOOK_URL</code> en tu archivo .env
+                            </div>
+                        )}
+                    </div>
+                </GlassCard>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                    <Button
+                        variant="ghost"
+                        onClick={handleGoToDashboard}
+                        className="flex-1"
+                    >
+                        Ir al Dashboard
+                    </Button>
+                    <Button
+                        onClick={handleGoToSearch}
+                        className="flex-1"
+                    >
+                        Ver Búsqueda
+                    </Button>
+                </div>
             </div>
         );
     }
 
+    // Formulario de creación
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+        <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
                     onClick={() => navigate('/dashboard')}
                     className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                    aria-label="Volver al dashboard"
                 >
                     <ArrowLeft size={20} />
                 </button>
                 <div>
                     <h1 className="text-3xl font-bold text-[var(--text-main)]">Nueva Búsqueda</h1>
-                    <p className="text-[var(--text-muted)]">Elegí cómo querés crear tu búsqueda</p>
+                    <p className="text-[var(--text-muted)]">Creá una nueva búsqueda para recibir candidatos</p>
                 </div>
             </div>
 
-            {/* Options Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Native Option */}
-                <GlassCard
-                    hover
-                    className="group cursor-pointer p-8 text-center apple-hover-lift"
-                    onClick={() => setShowForm(true)}
-                >
-                    <div className="mb-6 flex justify-center">
-                        <div className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
-                            <Sparkles className="w-12 h-12 text-emerald-500" />
+            {/* Form Card */}
+            <GlassCard className="relative overflow-hidden">
+                {/* Decorative gradient */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                <form onSubmit={handleSubmit} className="relative space-y-6">
+                    {/* Title Field */}
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-main)]">
+                            <Briefcase size={16} className="text-emerald-500" />
+                            Título del puesto
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.titulo}
+                            onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
+                            placeholder="ej: Desarrollador Full Stack Senior"
+                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* Description Field */}
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-main)]">
+                            <FileText size={16} className="text-emerald-500" />
+                            Descripción
+                            <span className="text-[var(--text-muted)] font-normal">(opcional)</span>
+                        </label>
+                        <textarea
+                            value={formData.descripcion}
+                            onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
+                            placeholder="Describe los requisitos, responsabilidades y cualquier detalle relevante..."
+                            rows={4}
+                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                        />
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                        <div className="flex items-start gap-3">
+                            <Zap size={20} className="text-purple-500 mt-0.5" />
+                            <div className="text-sm">
+                                <p className="text-[var(--text-main)] font-medium mb-1">Flujo con n8n</p>
+                                <p className="text-[var(--text-muted)]">
+                                    Al crear la búsqueda, obtendrás un link único para el formulario de n8n donde los candidatos podrán postularse.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-[var(--text-main)] mb-3">Crear Nativa</h3>
-                    <p className="text-[var(--text-muted)] mb-6">
-                        Creá una búsqueda rápida con título y descripción. Ideal para procesos simples.
-                    </p>
-                    <div className="flex items-center justify-center gap-2 text-emerald-500 font-medium">
-                        <span>Comenzar</span>
-                        <ArrowLeft size={16} className="rotate-180 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </GlassCard>
 
-                {/* n8n Option */}
-                <GlassCard
-                    hover
-                    className="group cursor-pointer p-8 text-center apple-hover-lift"
-                    onClick={handleN8nRedirect}
-                >
-                    <div className="mb-6 flex justify-center">
-                        <div className="p-6 bg-purple-500/10 rounded-2xl border border-purple-500/20 group-hover:bg-purple-500/20 transition-all">
-                            <Zap className="w-12 h-12 text-purple-500" />
-                        </div>
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => navigate('/dashboard')}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            isLoading={loading}
+                            icon={<Zap size={18} />}
+                        >
+                            Crear Búsqueda
+                        </Button>
                     </div>
-                    <h3 className="text-2xl font-bold text-[var(--text-main)] mb-3">Usar n8n</h3>
-                    <p className="text-[var(--text-muted)] mb-6">
-                        Abrí el flujo completo de n8n para procesos avanzados con automatizaciones.
-                    </p>
-                    <div className="flex items-center justify-center gap-2 text-purple-500 font-medium">
-                        <span>Abrir n8n</span>
-                        <ExternalLink size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </div>
-                </GlassCard>
-            </div>
-
-            {/* Info */}
-            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                <p className="text-sm text-[var(--text-muted)] text-center">
-                    💡 <strong>Tip:</strong> Podés editar el título y descripción de cualquier búsqueda después de crearla.
-                </p>
-            </div>
+                </form>
+            </GlassCard>
         </div>
     );
 }
