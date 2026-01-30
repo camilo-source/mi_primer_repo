@@ -59,13 +59,7 @@ export default function Dashboard() {
     };
 
     const handleNewSearch = () => {
-        const n8nFormUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-
-        if (!n8nFormUrl) {
-            addToast('Error: VITE_N8N_WEBHOOK_URL no configurado', 'error');
-            return;
-        }
-        window.open(n8nFormUrl, '_blank');
+        navigate('/search/new');
     };
 
     const handleCreateDemo = async (demoType: DemoType) => {

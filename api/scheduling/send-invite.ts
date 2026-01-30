@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
+import { randomUUID } from 'crypto';
 
 // Initialize Supabase Admin Client
 const supabase = createClient(
@@ -53,17 +54,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(404).json({ error: 'Candidate not found' });
         }
 
-        // 3. Get user's availability
-        const { data: availability } = await supabase
-            .from('availability')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('is_booked', false)
-            .gte('start_time', new Date().toISOString())
-            .order('start_time', { ascending: true })
-            .limit(10);
+        // 3. Generate booking token if candidate doesn't have one
+        let bookingToken = candidate.booking_token;
+        if (!bookingToken) {
+            bookingToken = randomUUID();
+            await supabase
+                .from('postulantes')
+                .update({ booking_token: bookingToken })
+                .eq('id', candidateId);
+        }
 
-        // 4. Set up Google OAuth with stored tokens
+        // 4. Build the booking URL
+        const bookingUrl = `https://mi-primer-repo-seven.vercel.app/book/${bookingToken}`;
+
+        // 5. Set up Google OAuth with stored tokens
         oauth2Client.setCredentials({
             access_token: integration.google_access_token,
             refresh_token: integration.google_refresh_token,
@@ -86,14 +90,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             oauth2Client.setCredentials(credentials);
         }
 
-        // 5. Generate email with AI (using Gemini)
+        // 6. Generate email with AI (using Gemini) - NOW WITH BOOKING LINK
         const emailContent = await generateEmailWithAI(
             candidate.nombre,
             candidate.busquedas?.titulo || 'the position',
-            availability || []
+            bookingUrl
         );
 
-        // 6. Send email via Gmail API
+        // 7. Send email via Gmail API
         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
         const message = createMimeMessage({
@@ -109,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         });
 
-        // 7. Update candidate status and save thread ID
+        // 8. Update candidate status and save thread ID
         await supabase
             .from('postulantes')
             .update({
@@ -119,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             })
             .eq('id', candidateId);
 
-        // 8. Log the email
+        // 9. Log the email
         await supabase
             .from('email_logs')
             .insert({
@@ -135,7 +139,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
             success: true,
             message: 'Invitation sent successfully',
-            threadId: sentMessage?.threadId
+            threadId: sentMessage?.threadId,
+            bookingUrl
         });
 
     } catch (error) {
@@ -148,34 +153,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function generateEmailWithAI(
     candidateName: string,
     positionTitle: string,
-    availableSlots: any[]
+    bookingUrl: string
 ) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-    const slotsText = availableSlots.map(slot => {
-        const date = new Date(slot.start_time);
-        return `- ${date.toLocaleDateString('es-AR', { weekday: 'long', month: 'long', day: 'numeric' })} a las ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
-    }).join('\n');
 
     const prompt = `
 You are a professional HR assistant. Write a friendly and professional email in Spanish to invite a candidate for an interview.
 
 Candidate Name: ${candidateName}
 Position: ${positionTitle}
-Available Time Slots:
-${slotsText}
+Booking Link: ${bookingUrl}
 
 The email should:
 1. Be warm and professional
-2. Congratulate them for advancing in the process
-3. List the available time slots clearly
-4. Ask them to reply with their preferred time or suggest alternatives
-5. Keep it concise (max 150 words)
+2. Congratulate them for advancing in the selection process
+3. IMPORTANT: Include the booking link prominently and explain that they can click it to select their preferred interview time
+4. Mention that the link allows them to see available slots and confirm their interview instantly
+5. Keep it concise (max 120 words)
+6. End with a friendly closing
+
+The booking link MUST appear clearly in the email body.
 
 Return JSON format:
 {
-  "subject": "email subject line",
-  "body": "email body in plain text"
+  "subject": "email subject line in Spanish",
+  "body": "email body in plain text with the booking link included"
 }
 `;
 
@@ -203,10 +205,22 @@ Return JSON format:
         return JSON.parse(jsonMatch[0]);
     }
 
-    // Fallback
+    // Fallback with booking link included
     return {
         subject: `Invitación a entrevista - ${positionTitle}`,
-        body: `Hola ${candidateName},\n\nNos gustaría invitarte a una entrevista...`
+        body: `Hola ${candidateName},
+
+¡Felicitaciones! Has avanzado en nuestro proceso de selección para el puesto de ${positionTitle}.
+
+Nos gustaría invitarte a una entrevista. Para agendar tu horario preferido, por favor hacé click en el siguiente enlace:
+
+${bookingUrl}
+
+En ese link vas a poder ver los horarios disponibles y confirmar tu entrevista de forma instantánea.
+
+¡Esperamos verte pronto!
+
+Saludos cordiales`
     };
 }
 
