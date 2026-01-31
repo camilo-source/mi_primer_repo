@@ -22,11 +22,9 @@ import { type Candidate } from './CandidateTable';
 
 // Define the possible statuses and their order
 const COLUMNS = [
-    { id: 'pending', title: 'Pendiente', color: 'yellow' },
-    { id: 'sent', title: 'Enviado', color: 'blue' },
-    { id: 'replied', title: 'Respondido', color: 'purple' },
-    { id: 'confirmed', title: 'Confirmado', color: 'emerald' },
-    { id: 'rejected', title: 'Rechazado', color: 'red' },
+    { id: 'pending', title: 'Nuevos', color: 'yellow' },
+    { id: 'in_progress', title: 'En Proceso', color: 'blue' },
+    { id: 'confirmed', title: 'Agendados', color: 'emerald' },
 ] as const;
 
 type ColumnId = typeof COLUMNS[number]['id'];
@@ -57,10 +55,25 @@ export function KanbanBoard({ candidates, onStatusChange, onSchedule }: KanbanBo
         })
     );
 
+    // Map old statuses to new column structure
+    const mapStatusToColumn = (status: string): ColumnId => {
+        switch (status) {
+            case 'pending':
+                return 'pending';
+            case 'sent':
+            case 'replied':
+                return 'in_progress';
+            case 'confirmed':
+                return 'confirmed';
+            default:
+                return 'pending';
+        }
+    };
+
     const getCandidatesByColumn = (columnId: ColumnId): Candidate[] => {
         return items.filter(candidate => {
             const status = candidate.estado_agenda || 'pending';
-            return status === columnId;
+            return mapStatusToColumn(status) === columnId;
         });
     };
 
@@ -69,6 +82,20 @@ export function KanbanBoard({ candidates, onStatusChange, onSchedule }: KanbanBo
         const candidate = items.find(c => c.id === active.id);
         if (candidate) {
             setActiveCandidate(candidate);
+        }
+    };
+
+    // Map column ID to actual database status
+    const mapColumnToStatus = (columnId: ColumnId): string => {
+        switch (columnId) {
+            case 'pending':
+                return 'pending';
+            case 'in_progress':
+                return 'sent'; // Default to 'sent' for in_progress column
+            case 'confirmed':
+                return 'confirmed';
+            default:
+                return 'pending';
         }
     };
 
@@ -83,8 +110,9 @@ export function KanbanBoard({ candidates, onStatusChange, onSchedule }: KanbanBo
         const isOverColumn = COLUMNS.some(col => col.id === overId);
 
         if (isOverColumn) {
-            // Dragging over a column header
-            const newStatus = overId as ColumnId;
+            // Dragging over a column header - map to actual status
+            const columnId = overId as ColumnId;
+            const newStatus = mapColumnToStatus(columnId);
             setItems(prev =>
                 prev.map(item =>
                     item.id === activeId

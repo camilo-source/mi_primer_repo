@@ -283,13 +283,13 @@ export default function BookingPage() {
                             </div>
                         </motion.div>
 
-                        {/* Download .ics button */}
+                        {/* Download .ics button - subtle */}
                         <motion.button
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5 }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                                 playSound.click();
                                 // Generate .ics file
@@ -321,10 +321,10 @@ export default function BookingPage() {
                                 a.click();
                                 URL.revokeObjectURL(url);
                             }}
-                            className="mt-6 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/10 hover:border-white/20 transition-all"
+                            className="mt-6 flex items-center justify-center gap-1 mx-auto text-sm text-white/50 hover:text-white/80 transition-colors underline decoration-dotted underline-offset-4"
                         >
-                            <Download size={18} />
-                            Agregar a mi calendario
+                            <Download size={14} />
+                            Copiar recordatorio
                         </motion.button>
 
                         {/* Google Meet Link */}
