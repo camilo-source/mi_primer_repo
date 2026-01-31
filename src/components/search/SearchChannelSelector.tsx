@@ -36,6 +36,7 @@ export function SearchChannelSelector({ channels, onChange }: SearchChannelSelec
                     const Icon = item.icon;
                     return (
                         <button
+                            type="button"
                             key={item.key}
                             onClick={() => toggleChannel(item.key as keyof ChannelConfig)}
                             className={`
