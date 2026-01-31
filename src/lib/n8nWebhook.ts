@@ -8,8 +8,11 @@
  */
 
 // URL del proxy API que redirige a n8n
-const N8N_WEBHOOK_URL = '/api/n8n?action=trigger';
-const GRADING_API_URL = '/api/grading';
+import { APP_CONFIG } from '../config';
+
+// URL del proxy API que redirige a n8n
+const N8N_WEBHOOK_URL = `${APP_CONFIG.API.N8N}?action=trigger`;
+const GRADING_API_URL = APP_CONFIG.API.GRADING;
 
 /**
  * Payload que se envía al webhook de n8n
@@ -215,9 +218,7 @@ export function buildWebhookPayload(
     },
     searchId: string
 ): SearchWebhookPayload {
-    const baseUrl = typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://mi-primer-repo-seven.vercel.app';
+    const baseUrl = APP_CONFIG.BASE_URL;
 
     // Convertir idiomas a array de strings si viene como objetos
     let idiomasArray: string[] = [];

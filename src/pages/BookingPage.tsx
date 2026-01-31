@@ -37,7 +37,7 @@ export default function BookingPage() {
 
     const fetchSlots = async () => {
         try {
-            const response = await fetch(`/api/booking/slots?token=${token}`);
+            const response = await fetch(`/api/booking?action=slots&token=${token}`);
             const result = await response.json();
 
             if (!response.ok) {
@@ -62,7 +62,7 @@ export default function BookingPage() {
 
         setState('confirming');
         try {
-            const response = await fetch('/api/booking/confirm', {
+            const response = await fetch('/api/booking?action=confirm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, slotId: selectedSlot.id })

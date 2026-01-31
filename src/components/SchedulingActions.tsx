@@ -34,7 +34,7 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
 
             console.log('Creating booking for:', candidate.id);
 
-            const response = await fetch('/api/booking/create', {
+            const response = await fetch('/api/booking?action=create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -85,7 +85,7 @@ export function SchedulingActions({ candidate, onStatusChange }: SchedulingActio
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Not authenticated');
 
-            const response = await fetch('/api/scheduling/send-invite', {
+            const response = await fetch('/api/scheduling?action=send-invite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

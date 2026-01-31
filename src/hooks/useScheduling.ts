@@ -90,7 +90,7 @@ export function useScheduling(): UseSchedulingReturn {
             const userId = await getUserId();
             if (!userId) throw new Error('Not authenticated');
 
-            const response = await fetch('/api/scheduling/send-invite', {
+            const response = await fetch('/api/scheduling?action=send-invite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ candidateId, userId })
@@ -125,7 +125,7 @@ export function useScheduling(): UseSchedulingReturn {
             const userId = await getUserId();
             if (!userId) throw new Error('Not authenticated');
 
-            const response = await fetch('/api/scheduling/check-replies', {
+            const response = await fetch('/api/scheduling?action=check-replies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ candidateId, userId })
@@ -164,7 +164,7 @@ export function useScheduling(): UseSchedulingReturn {
             const userId = await getUserId();
             if (!userId) throw new Error('Not authenticated');
 
-            const response = await fetch('/api/scheduling/confirm', {
+            const response = await fetch('/api/scheduling?action=confirm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ candidateId, userId, slotId })
