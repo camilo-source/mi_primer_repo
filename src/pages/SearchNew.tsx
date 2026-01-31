@@ -4,8 +4,7 @@ import { Button } from '../components/ui/Button';
 import { useSearchForm } from '../hooks/useSearchForm';
 import {
     SearchFormInfo,
-    SearchFormRequirements,
-    SearchFormDetails,
+    SearchFormCombined,
     SearchSuccess
 } from '../components/search';
 import { useState } from 'react';
@@ -25,15 +24,10 @@ export default function SearchNew() {
         setNewSkill,
         addSkill,
         removeSkill,
-        // Requirement handlers
-        newReqExcluyente,
-        setNewReqExcluyente,
-        addReqExcluyente,
-        removeReqExcluyente,
-        newReqDeseable,
-        setNewReqDeseable,
-        addReqDeseable,
-        removeReqDeseable,
+        newSoftSkill,
+        setNewSoftSkill,
+        addSoftSkill,
+        removeSoftSkill,
         // Idioma handlers
         newIdioma,
         setNewIdioma,
@@ -47,16 +41,16 @@ export default function SearchNew() {
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    // Handle form submission - only on step 3
+    // Handle form submission - only on step 2
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Prevent submission on steps 1-2
-        if (currentStep < 3) {
+        // Prevent submission on step 1
+        if (currentStep < 2) {
             return;
         }
 
-        // Show confirmation dialog on step 3
+        // Show confirmation dialog on step 2
         setShowConfirmDialog(true);
     };
 
@@ -79,7 +73,7 @@ export default function SearchNew() {
         );
     }
 
-    // Multi-step form
+    // Multi-step form (2 steps now)
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             {/* Header */}
@@ -99,7 +93,7 @@ export default function SearchNew() {
 
             {/* Step Indicators */}
             <div className="flex items-center justify-center gap-2">
-                {[1, 2, 3].map(step => (
+                {[1, 2].map(step => (
                     <button
                         key={step}
                         type="button"
@@ -115,8 +109,7 @@ export default function SearchNew() {
                         </span>
                         <span className="hidden sm:inline text-sm font-medium">
                             {step === 1 && 'Información'}
-                            {step === 2 && 'Requisitos'}
-                            {step === 3 && 'Detalles'}
+                            {step === 2 && 'Perfil del Candidato'}
                         </span>
                     </button>
                 ))}
@@ -137,28 +130,17 @@ export default function SearchNew() {
                     )}
 
                     {currentStep === 2 && (
-                        <SearchFormRequirements
+                        <SearchFormCombined
                             formData={formData}
                             updateField={updateField}
                             newSkill={newSkill}
                             setNewSkill={setNewSkill}
                             addSkill={addSkill}
                             removeSkill={removeSkill}
-                            newReqExcluyente={newReqExcluyente}
-                            setNewReqExcluyente={setNewReqExcluyente}
-                            addReqExcluyente={addReqExcluyente}
-                            removeReqExcluyente={removeReqExcluyente}
-                            newReqDeseable={newReqDeseable}
-                            setNewReqDeseable={setNewReqDeseable}
-                            addReqDeseable={addReqDeseable}
-                            removeReqDeseable={removeReqDeseable}
-                        />
-                    )}
-
-                    {currentStep === 3 && (
-                        <SearchFormDetails
-                            formData={formData}
-                            updateField={updateField}
+                            newSoftSkill={newSoftSkill}
+                            setNewSoftSkill={setNewSoftSkill}
+                            addSoftSkill={addSoftSkill}
+                            removeSoftSkill={removeSoftSkill}
                             newIdioma={newIdioma}
                             setNewIdioma={setNewIdioma}
                             addIdioma={addIdioma}
@@ -189,7 +171,7 @@ export default function SearchNew() {
                                 Cancelar
                             </Button>
 
-                            {currentStep < 3 ? (
+                            {currentStep < 2 ? (
                                 <Button
                                     type="button"
                                     onClick={() => setCurrentStep(prev => prev + 1)}
