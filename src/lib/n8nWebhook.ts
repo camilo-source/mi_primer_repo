@@ -121,6 +121,8 @@ export async function triggerN8nWorkflow(
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`[n8n Webhook] Attempt ${attempt}/${maxRetries}...`);
+            console.log('[n8n Webhook] URL:', N8N_WEBHOOK_URL);
+            console.log('[n8n Webhook] Payload:', JSON.stringify(normalizedPayload, null, 2));
 
             const response = await fetch(N8N_WEBHOOK_URL, {
                 method: 'POST',
@@ -130,6 +132,8 @@ export async function triggerN8nWorkflow(
                 },
                 body: JSON.stringify(normalizedPayload),
             });
+
+            console.log('[n8n Webhook] Response status:', response.status);
 
             if (response.ok) {
                 console.log('[n8n Webhook] Success!');

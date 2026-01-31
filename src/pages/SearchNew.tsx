@@ -47,17 +47,16 @@ export default function SearchNew() {
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    // Prevent form submission on steps 1-2
+    // Handle form submission - only on step 3
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Only allow submission on step 3
+        // Prevent submission on steps 1-2
         if (currentStep < 3) {
-            setCurrentStep(prev => prev + 1);
             return;
         }
 
-        // Show confirmation dialog
+        // Show confirmation dialog on step 3
         setShowConfirmDialog(true);
     };
 
@@ -192,7 +191,8 @@ export default function SearchNew() {
 
                             {currentStep < 3 ? (
                                 <Button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => setCurrentStep(prev => prev + 1)}
                                 >
                                     Siguiente →
                                 </Button>
