@@ -38,19 +38,10 @@ En esta fase intensiva de desarrollo, hemos transformado el MVP de Antigravity e
 ### `src/lib/n8nWebhook.ts`
 *   **Evolución**: El payload ahora transporta metadatos de configuración (`channels`), no solo datos planos. Esto prepara al sistema para futuras features (ej. configuración de tono de voz por canal).
 
-## 4. Oportunidades de Optimización Futura (Roadmap v4)
-
-Si bien el sistema está sólido, aquí están las "optimizaciones de toque final" para el futuro cercano:
-
-1.  **Feedback Visual en Tiempo Real**:
-    *   *Idea*: Cuando n8n recibe la orden, devolver un `messsageId` y mostrar en el Dashboard "Publicando en LinkedIn..." con un spinner real.
-    *   *Req*: Webhook síncrono o polling de estado.
-
-2.  **Gestión de Candidatos (ATS Lite)**:
-    *   Ya recibimos CVs. El siguiente paso lógico es un **Visualizador de PDFs** integrado en el dashboard para no tener que descargar los archivos.
-
-3.  **Analytics de Canales**:
-    *   Agregar un campo `source` (origen) en la tabla `postulantes` para saber si vinieron de LinkedIn, Email, etc. (El link de n8n puede incluir `?source=linkedin`).
+4.  **Roadmap v4: Optimizaciones Completadas**
+    *   ✅ **Feedback Visual en Tiempo Real**: Implementado en `useSearchForm` con mensajes de estado granulares.
+    *   ✅ **ATS Lite (Visualizador PDF)**: Implementado `PdfViewer` integrado en la tabla de candidatos.
+    *   ✅ **Analytics de Canales**: Tracking de parámetro `?source=` activado en `Apply.tsx` y DB.
 
 ## 5. Conclusión
 El sistema **Antigravity Ultra** ha madurado. Ya no es solo un formulario; es un **Centro de Comando de Reclutamiento**. La integración Frontend-Backend-AI está sincronizada y protegida contra errores humanos comunes.
