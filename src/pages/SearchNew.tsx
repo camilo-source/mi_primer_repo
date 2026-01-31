@@ -1,4 +1,4 @@
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { useSearchForm } from '../hooks/useSearchForm';
@@ -8,6 +8,7 @@ import {
     SearchFormDetails,
     SearchSuccess
 } from '../components/search';
+import { useState } from 'react';
 
 export default function SearchNew() {
     const {
@@ -43,6 +44,29 @@ export default function SearchNew() {
         // Navigation
         navigate
     } = useSearchForm();
+
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Prevent form submission on steps 1-2
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Only allow submission on step 3
+        if (currentStep < 3) {
+            setCurrentStep(prev => prev + 1);
+            return;
+        }
+
+        // Show confirmation dialog
+        setShowConfirmDialog(true);
+    };
+
+    // Confirm and create search
+    const confirmAndCreate = async () => {
+        setShowConfirmDialog(false);
+        const fakeEvent = { preventDefault: () => { } } as React.FormEvent;
+        await handleSubmit(fakeEvent);
+    };
 
     // Success view after creation
     if (createdSearch) {
@@ -104,7 +128,7 @@ export default function SearchNew() {
                 {/* Decorative gradient */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
-                <form onSubmit={handleSubmit} className="relative space-y-6">
+                <form onSubmit={handleFormSubmit} className="relative space-y-6">
                     {/* Step content */}
                     {currentStep === 1 && (
                         <SearchFormInfo
@@ -168,8 +192,7 @@ export default function SearchNew() {
 
                             {currentStep < 3 ? (
                                 <Button
-                                    type="button"
-                                    onClick={() => setCurrentStep(prev => prev + 1)}
+                                    type="submit"
                                 >
                                     Siguiente →
                                 </Button>
@@ -186,6 +209,47 @@ export default function SearchNew() {
                     </div>
                 </form>
             </GlassCard>
+
+            {/* Confirmation Dialog */}
+            {showConfirmDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <GlassCard className="max-w-md w-full">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-full bg-amber-500/10">
+                                <AlertTriangle className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">
+                                    ¿Estás seguro?
+                                </h3>
+                                <p className="text-[var(--text-muted)] mb-4">
+                                    Se creará la búsqueda <strong className="text-[var(--text-main)]">"{formData.titulo}"</strong> y se publicará automáticamente en LinkedIn.
+                                </p>
+                                <p className="text-sm text-amber-400 mb-6">
+                                    ⚠️ Esta acción no se puede deshacer.
+                                </p>
+                                <div className="flex gap-3 justify-end">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => setShowConfirmDialog(false)}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={confirmAndCreate}
+                                        isLoading={loading}
+                                        icon={<Zap size={18} />}
+                                    >
+                                        Sí, Crear Búsqueda
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
         </div>
     );
 }
