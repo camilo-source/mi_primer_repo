@@ -141,7 +141,7 @@ export default function Apply() {
 
             // 4. Disparar webhook a n8n para análisis de IA
             triggerGradingWorkflow({
-                jobId,
+                jobId: jobId!,
                 candidate: {
                     nombre: formData.nombre,
                     email: formData.email,

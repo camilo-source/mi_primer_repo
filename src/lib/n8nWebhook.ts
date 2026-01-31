@@ -9,7 +9,7 @@
 
 // URL del proxy API que redirige a n8n
 const N8N_WEBHOOK_URL = '/api/n8n?action=trigger';
-const N8N_GRADING_URL = '/api/n8n?action=grading';
+const GRADING_API_URL = '/api/grading';
 
 /**
  * Payload que se envía al webhook de n8n
@@ -267,15 +267,15 @@ export interface GradingPayload {
 }
 
 /**
- * Dispara el workflow de análisis de candidatos
+ * Dispara el workflow de análisis de candidatos (Internal API)
  */
 export async function triggerGradingWorkflow(
     payload: GradingPayload
 ): Promise<WebhookResult> {
     try {
-        console.log('[Grading Webhook] Triggering analysis...', payload);
+        console.log('[Grading API] Triggering analysis...', payload);
 
-        const response = await fetch(N8N_GRADING_URL, {
+        const response = await fetch(GRADING_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -285,16 +285,16 @@ export async function triggerGradingWorkflow(
         });
 
         if (response.ok) {
-            console.log('[Grading Webhook] Success!');
+            console.log('[Grading API] Analysis queued/completed!');
             return { success: true };
         }
 
         const errorText = await response.text();
-        console.error('[Grading Webhook] Error:', errorText);
+        console.error('[Grading API] Error:', errorText);
         return { success: false, error: errorText };
 
     } catch (error) {
-        console.error('[Grading Webhook] Exception:', error);
+        console.error('[Grading API] Exception:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
