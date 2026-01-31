@@ -124,9 +124,28 @@ export default function Dashboard() {
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm("¿Estás seguro? Se perderán TODOS los datos de esta búsqueda.")) return;
 
         try {
+            // Check if there are any confirmed candidates
+            const { data: confirmedCandidates, error: checkError } = await supabase
+                .from('postulantes')
+                .select('id, nombre')
+                .eq('id_busqueda_n8n', id)
+                .eq('estado_agenda', 'confirmed');
+
+            if (checkError) throw checkError;
+
+            if (confirmedCandidates && confirmedCandidates.length > 0) {
+                addToast(
+                    `❌ No se puede eliminar: hay ${confirmedCandidates.length} candidato(s) con entrevista confirmada`,
+                    'error'
+                );
+                return;
+            }
+
+            // Proceed with deletion if no confirmed candidates
+            if (!confirm("¿Estás seguro? Se perderán TODOS los datos de esta búsqueda.")) return;
+
             await supabase.from('postulantes').delete().eq('id_busqueda_n8n', id);
             const { error } = await supabase.from('busquedas').delete().eq('id_busqueda_n8n', id);
 
