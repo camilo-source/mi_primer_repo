@@ -40,7 +40,9 @@ function setCorsHeaders(res: VercelResponse) {
 // Handler for triggering n8n workflow (proxy)
 async function handleTrigger(req: VercelRequest, res: VercelResponse) {
     try {
-        console.log('[n8n Trigger] Forwarding request to n8n...');
+        console.log('[n8n Trigger] ========== NEW REQUEST ==========');
+        console.log('[n8n Trigger] Target URL:', N8N_WEBHOOK_URL);
+        console.log('[n8n Trigger] ENV Check - N8N_WEBHOOK_URL exists:', !!process.env.N8N_WEBHOOK_URL);
         console.log('[n8n Trigger] Payload:', JSON.stringify(req.body, null, 2));
 
         const response = await fetch(N8N_WEBHOOK_URL, {
@@ -52,9 +54,11 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
         });
 
         console.log('[n8n Trigger] Response status:', response.status);
+        console.log('[n8n Trigger] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
 
         if (response.ok) {
             const data = await response.json().catch(() => ({}));
+            console.log('[n8n Trigger] ✅ SUCCESS - Response data:', JSON.stringify(data, null, 2));
             return res.status(200).json({
                 success: true,
                 data
@@ -62,7 +66,7 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
         }
 
         const errorText = await response.text();
-        console.error('[n8n Trigger] Error from n8n:', errorText);
+        console.error('[n8n Trigger] ❌ ERROR - Status:', response.status, 'Body:', errorText);
 
         return res.status(response.status).json({
             success: false,
@@ -70,7 +74,8 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
         });
 
     } catch (error) {
-        console.error('[n8n Trigger] Error:', error);
+        console.error('[n8n Trigger] ❌ EXCEPTION:', error);
+        console.error('[n8n Trigger] Error stack:', error instanceof Error ? error.stack : 'No stack');
         return res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
