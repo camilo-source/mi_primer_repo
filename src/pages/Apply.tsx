@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { BackgroundBeams } from '../components/ui/background-beams';
 import { Spotlight } from '../components/ui/spotlight';
 import { Upload, User, Mail, Phone, FileText, CheckCircle, AlertCircle, Briefcase } from 'lucide-react';
+import { triggerGradingWorkflow } from '../lib/n8nWebhook';
 
 interface JobInfo {
     titulo: string;
@@ -138,8 +139,17 @@ export default function Apply() {
 
             if (insertError) throw insertError;
 
-            // 4. Disparar webhook a n8n para análisis de IA (opcional)
-            // Esto se puede hacer después si queremos que n8n analice el CV
+            // 4. Disparar webhook a n8n para análisis de IA
+            triggerGradingWorkflow({
+                jobId,
+                candidate: {
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    linkedin: formData.linkedin,
+                    cv_text_or_url: cvUrl,
+                    skills: [] // No solicitado explícitamente en form
+                }
+            }).catch(console.error); // No bloquear UI por esto
 
             setSubmitted(true);
         } catch (err) {

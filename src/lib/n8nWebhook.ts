@@ -9,6 +9,7 @@
 
 // URL del proxy API que redirige a n8n
 const N8N_WEBHOOK_URL = '/api/n8n?action=trigger';
+const N8N_GRADING_URL = '/api/n8n?action=grading';
 
 /**
  * Payload que se envía al webhook de n8n
@@ -249,4 +250,54 @@ export function buildWebhookPayload(
         flyer_url: formData.flyer_url,
         channels: formData.channels,
     };
+}
+
+/**
+ * Payload para el análisis de candidatos (AI Grading)
+ */
+export interface GradingPayload {
+    jobId: string;
+    candidate: {
+        nombre: string;
+        email: string;
+        linkedin?: string;
+        cv_text_or_url: string;
+        skills?: string[];
+    };
+}
+
+/**
+ * Dispara el workflow de análisis de candidatos
+ */
+export async function triggerGradingWorkflow(
+    payload: GradingPayload
+): Promise<WebhookResult> {
+    try {
+        console.log('[Grading Webhook] Triggering analysis...', payload);
+
+        const response = await fetch(N8N_GRADING_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+            console.log('[Grading Webhook] Success!');
+            return { success: true };
+        }
+
+        const errorText = await response.text();
+        console.error('[Grading Webhook] Error:', errorText);
+        return { success: false, error: errorText };
+
+    } catch (error) {
+        console.error('[Grading Webhook] Exception:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
 }

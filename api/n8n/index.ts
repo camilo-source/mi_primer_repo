@@ -10,13 +10,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL ||
     'https://n8n.metanoian8n.com/webhook/68440768-004a-4aa8-9127-f3130b99d6ca';
 
-/**
- * Unified n8n API endpoint
- * 
- * Handles two operations:
- * 1. POST /api/n8n?action=trigger - Proxy to trigger n8n workflow (from frontend)
- * 2. POST /api/n8n - Receive processed candidates from n8n (webhook)
- */
+const N8N_GRADING_WEBHOOK_URL = process.env.N8N_GRADING_WEBHOOK_URL ||
+    'https://n8n.metanoian8n.com/webhook/grading-webhook';
 
 interface Candidato {
     nombre: string;
@@ -38,14 +33,15 @@ function setCorsHeaders(res: VercelResponse) {
 }
 
 // Handler for triggering n8n workflow (proxy)
-async function handleTrigger(req: VercelRequest, res: VercelResponse) {
-    try {
-        console.log('[n8n Trigger] ========== NEW REQUEST ==========');
-        console.log('[n8n Trigger] Target URL:', N8N_WEBHOOK_URL);
-        console.log('[n8n Trigger] ENV Check - N8N_WEBHOOK_URL exists:', !!process.env.N8N_WEBHOOK_URL);
-        console.log('[n8n Trigger] Payload:', JSON.stringify(req.body, null, 2));
+async function handleTrigger(req: VercelRequest, res: VercelResponse, type: 'search' | 'grading' = 'search') {
+    const targetUrl = type === 'grading' ? N8N_GRADING_WEBHOOK_URL : N8N_WEBHOOK_URL;
 
-        const response = await fetch(N8N_WEBHOOK_URL, {
+    try {
+        console.log(`[n8n ${type.toUpperCase()}] ========== NEW REQUEST ==========`);
+        console.log(`[n8n ${type.toUpperCase()}] Target URL:`, targetUrl);
+        console.log(`[n8n ${type.toUpperCase()}] Payload:`, JSON.stringify(req.body, null, 2));
+
+        const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -53,12 +49,11 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
             body: JSON.stringify(req.body),
         });
 
-        console.log('[n8n Trigger] Response status:', response.status);
-        console.log('[n8n Trigger] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+        console.log(`[n8n ${type.toUpperCase()}] Response status:`, response.status);
 
         if (response.ok) {
             const data = await response.json().catch(() => ({}));
-            console.log('[n8n Trigger] ✅ SUCCESS - Response data:', JSON.stringify(data, null, 2));
+            console.log(`[n8n ${type.toUpperCase()}] ✅ SUCCESS`);
             return res.status(200).json({
                 success: true,
                 data
@@ -66,7 +61,7 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
         }
 
         const errorText = await response.text();
-        console.error('[n8n Trigger] ❌ ERROR - Status:', response.status, 'Body:', errorText);
+        console.error(`[n8n ${type.toUpperCase()}] ❌ ERROR - Status:`, response.status, 'Body:', errorText);
 
         return res.status(response.status).json({
             success: false,
@@ -74,8 +69,7 @@ async function handleTrigger(req: VercelRequest, res: VercelResponse) {
         });
 
     } catch (error) {
-        console.error('[n8n Trigger] ❌ EXCEPTION:', error);
-        console.error('[n8n Trigger] Error stack:', error instanceof Error ? error.stack : 'No stack');
+        console.error(`[n8n ${type.toUpperCase()}] ❌ EXCEPTION:`, error);
         return res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -202,7 +196,9 @@ export default async function handler(
     const action = req.query.action as string;
 
     if (action === 'trigger') {
-        return handleTrigger(req, res);
+        return handleTrigger(req, res, 'search');
+    } else if (action === 'grading') {
+        return handleTrigger(req, res, 'grading');
     } else {
         return handleWebhook(req, res);
     }

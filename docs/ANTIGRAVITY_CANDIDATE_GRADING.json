@@ -1,0 +1,135 @@
+{
+    "name": "ANTIGRAVITY CANDIDATE GRADING",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "grading-webhook",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -200,
+                0
+            ],
+            "id": "webhook-candidate",
+            "name": "WEBHOOK (New Candidate)"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT * FROM busquedas WHERE id_busqueda_n8n = $1",
+                "additionalFields": {
+                    "queryParams": "={{ $json.body.jobId }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                40,
+                0
+            ],
+            "id": "fetch-job-info",
+            "name": "FETCH Job Info",
+            "credentials": {
+                "postgres": {
+                    "id": "POSTGRES_CREDENTIALS_ID",
+                    "name": "Supabase Connection"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gemini-1.5-pro-latest",
+                    "mode": "list",
+                    "cachedResultName": "Gemini 1.5 Pro"
+                },
+                "promptType": "define",
+                "text": "=[ROLE]\nExpert Technical Recruiter & Talent Analyst.\n\n[TASK]\nAnalyze the candidate's profile against the job requirements and provide a structured qualification report.\n\n[JOB DATA]\nTitle: {{ $('FETCH Job Info').item.json.titulo }}\nSkills Required: {{ $('FETCH Job Info').item.json.habilidades_requeridas }}\n\n[CANDIDATE DATA]\nName: {{ $('WEBHOOK (New Candidate)').item.json.body.candidate.nombre }}\nSkills Provided: {{ $('WEBHOOK (New Candidate)').item.json.body.candidate.skills }}\nCV Content/Summary: {{ $('WEBHOOK (New Candidate)').item.json.body.candidate.cv_text_or_url }}\n\n[OUTPUT FORMAT - JSON ONLY]\n{\n  \"score\": (0-100 integer),\n  \"reasoning\": \"Brief explanation of the score (1 sentence)\",\n  \"strengths\": [\"List\", \"of\", \"3\", \"key\", \"strengths\"],\n  \"gaps\": [\"List\", \"of\", \"weaknesses\"],\n  \"interview_questions\": [\"3 custom questions to ask this candidate\"]\n}",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.4,
+            "position": [
+                300,
+                0
+            ],
+            "id": "gemini-grader",
+            "name": "GEMINI 1.5 PRO (Grader)"
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "table": {
+                    "__rl": true,
+                    "value": "postulantes",
+                    "mode": "list",
+                    "cachedResultName": "postulantes"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "score_ia": "={{ JSON.parse($json.text).score }}",
+                        "resumen_ia": "={{ JSON.parse($json.text).reasoning }}",
+                        "estado": "clasificado"
+                    },
+                    "matchingColumns": [
+                        "id"
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                600,
+                0
+            ],
+            "id": "update-candidate",
+            "name": "UPDATE Candidate Score",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SUPABASE_CREDENTIALS_ID",
+                    "name": "Supabase API"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "WEBHOOK (New Candidate)": {
+            "main": [
+                [
+                    {
+                        "node": "FETCH Job Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "FETCH Job Info": {
+            "main": [
+                [
+                    {
+                        "node": "GEMINI 1.5 PRO (Grader)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GEMINI 1.5 PRO (Grader)": {
+            "main": [
+                [
+                    {
+                        "node": "UPDATE Candidate Score",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
