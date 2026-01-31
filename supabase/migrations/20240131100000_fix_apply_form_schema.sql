@@ -20,5 +20,5 @@ INSERT TO public WITH CHECK (true);
 -- 5. Grant permissions (just in case)
 GRANT INSERT ON public.postulantes TO anon;
 GRANT INSERT ON public.postulantes TO authenticated;
-GRANT USAGE ON SEQUENCE postulantes_id_seq TO anon;
+-- GRANT USAGE ON SEQUENCE postulantes_id_seq TO anon; -- Not using serial, using UUID
 -- If using serial (though we use UUID)
