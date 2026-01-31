@@ -3,11 +3,12 @@
  * 
  * Este módulo maneja la comunicación con n8n para disparar
  * el workflow de generación de publicaciones de LinkedIn.
+ * 
+ * Usa un proxy API para evitar problemas de CORS.
  */
 
-// URL del webhook de n8n MVP 1.0
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_MVP_WEBHOOK_URL ||
-    'https://n8n.metanoian8n.com/webhook/68440768-004a-4aa8-9127-f3130b99d6ca';
+// URL del proxy API que redirige a n8n
+const N8N_WEBHOOK_URL = '/api/n8n/trigger';
 
 /**
  * Payload que se envía al webhook de n8n
