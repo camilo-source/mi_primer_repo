@@ -1,4 +1,4 @@
-import { ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Zap, AlertTriangle, Beaker } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { useSearchForm } from '../hooks/useSearchForm';
@@ -22,6 +22,7 @@ export default function SearchNew() {
         setCurrentStep,
         updateField,
         updateChannels,
+        loadDemoData,
         // Skill handlers
         newSkill,
         setNewSkill,
@@ -80,18 +81,30 @@ export default function SearchNew() {
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/dashboard')}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                    aria-label="Volver al dashboard"
-                >
-                    <ArrowLeft size={20} />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-bold text-[var(--text-main)]">Nueva Búsqueda</h1>
-                    <p className="text-[var(--text-muted)]">Definí los requisitos del puesto para que la IA califique correctamente</p>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                        aria-label="Volver al dashboard"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-[var(--text-main)]">Nueva Búsqueda</h1>
+                        <p className="text-[var(--text-muted)]">Definí los requisitos del puesto para que la IA califique correctamente</p>
+                    </div>
                 </div>
+
+                <button
+                    onClick={loadDemoData}
+                    type="button"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 transition-all border border-indigo-500/20 hover:border-indigo-500/40"
+                    title="Cargar datos de prueba"
+                >
+                    <Beaker size={18} />
+                    <span className="text-sm font-medium">Demo</span>
+                </button>
             </div>
 
             {/* Step Indicators */}

@@ -253,6 +253,33 @@ export function useSearchForm() {
         }
     }, [formData, addToast, navigate]);
 
+    const loadDemoData = useCallback(() => {
+        setFormData({
+            ...initialSearchFormData,
+            titulo: 'Senior Frontend Engineer',
+            empresa: 'TechFlow Solutions',
+            rubro: 'Tecnología',
+            descripcion: 'Estamos buscando un desarrollador frontend senior apasionado por crear experiencias de usuario excepcionales.',
+            descripcion_empresa: 'TechFlow es una empresa líder en desarrollo de software...',
+            ubicacion: 'Buenos Aires, Argentina (Remoto)',
+            modalidad: 'remoto',
+            experiencia_minima: 5,
+            experiencia_maxima: 8,
+            salario_min: '3000',
+            salario_max: '5000',
+            moneda: 'USD',
+            habilidades_requeridas: ['React', 'TypeScript', 'Node.js', 'Tailwind CSS'],
+            habilidades_blandas: ['Liderazgo', 'Comunicación efectiva', 'Resolución de problemas'],
+            requisitos_excluyentes: ['5+ años de experiencia en React', 'Inglés avanzado'],
+            requisitos_deseables: ['Experiencia con Next.js', 'Conocimientos de AWS'],
+            idiomas: [{ idioma: 'Inglés', nivel: 'C1' }],
+            nivel_formacion: 'Grado Universitario',
+            disponibilidad: 'full_time',
+            extras: 'Beneficios: Stock options, Seguro de salud premium'
+        });
+        addToast('Datos de prueba cargados', 'success');
+    }, [addToast]);
+
     return {
         // State
         loading,
@@ -264,6 +291,7 @@ export function useSearchForm() {
         setCurrentStep,
         updateField,
         updateChannels,
+        loadDemoData,
         // Skill handlers
         newSkill,
         setNewSkill,
