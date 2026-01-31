@@ -18,6 +18,7 @@ interface Candidato {
     email: string;
     resumen_ia?: string;
     score_ia?: number;
+    source?: string;
 }
 
 interface WebhookPayload {
@@ -133,7 +134,8 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
             resumen_ia: candidato.resumen_ia || null,
             score_ia: candidato.score_ia || null,
             estado_agenda: 'pending',
-            comentarios_admin: null
+            comentarios_admin: null,
+            source: candidato.source || 'n8n_automation'
         }));
 
         const { data: candidatosInsertados, error: insertError } = await supabase
