@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -19,6 +19,8 @@ interface JobInfo {
 
 export default function Apply() {
     const { jobId } = useParams<{ jobId: string }>();
+    const [searchParams] = useSearchParams();
+    const source = searchParams.get('source');
     const [jobInfo, setJobInfo] = useState<JobInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -134,7 +136,9 @@ export default function Apply() {
                     cv_url: cvUrl,
                     estado: 'nuevo',
                     score_ia: null,
+
                     resumen_ia: null,
+                    source: source || 'direct',
                 });
 
             if (insertError) throw insertError;

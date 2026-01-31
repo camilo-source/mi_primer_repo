@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
+import { PdfViewer } from '../components/ui/PdfViewer';
 import { CandidateTable, type Candidate } from '../components/CandidateTable';
 import { KanbanBoard } from '../components/KanbanBoard';
 import { ScheduleModal } from '../components/ScheduleModal';
@@ -52,6 +53,7 @@ export default function SearchDetail() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState<{ id: string, name: string } | null>(null);
+    const [selectedCv, setSelectedCv] = useState<string | null>(null);
 
     // Ordenar candidatos por score (mayor a menor)
     const sortedCandidates = useMemo(() => {
@@ -456,9 +458,18 @@ export default function SearchDetail() {
                         data={sortedCandidates}
                         onUpdateComment={handleUpdateComment}
                         onSchedule={handleOpenSchedule}
+                        onViewCv={(url) => setSelectedCv(url)}
                     />
                 </div>
             )}
+
+            {/* PdfViewer Modal */}
+            <PdfViewer
+                url={selectedCv}
+                onClose={() => setSelectedCv(null)}
+                title="CV del Candidato"
+            />
+
 
             {/* Schedule Modal */}
             <ScheduleModal
@@ -467,6 +478,6 @@ export default function SearchDetail() {
                 onConfirm={handleConfirmSchedule}
                 candidateName={selectedCandidate?.name || 'Candidato'}
             />
-        </div>
+        </div >
     );
 }

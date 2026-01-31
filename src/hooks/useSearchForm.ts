@@ -11,6 +11,7 @@ export function useSearchForm() {
     const { addToast } = useToast();
 
     const [loading, setLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<SearchFormData>(initialSearchFormData);
     const [createdSearch, setCreatedSearch] = useState<CreatedSearch | null>(null);
@@ -141,6 +142,7 @@ export function useSearchForm() {
         }
 
         setLoading(true);
+        setStatusMessage('Iniciando proceso...');
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -152,6 +154,7 @@ export function useSearchForm() {
             }
 
             const searchId = crypto.randomUUID();
+            setStatusMessage('Guardando búsqueda...');
             const idiomasArray = formData.idiomas.map(i => `${i.idioma} ${i.nivel}`);
 
             const insertData: Record<string, unknown> = {
@@ -197,7 +200,14 @@ export function useSearchForm() {
             addToast('¡Búsqueda creada! Generando publicación...', 'success');
 
             // Trigger n8n webhook
+            setStatusMessage('Conectando con Agentes IA...');
+
+            // Simulate a "thinking" moment for better UX if it's too fast
+            await new Promise(resolve => setTimeout(resolve, 800));
+
             const webhookPayload = buildWebhookPayload(formData, searchId);
+
+            setStatusMessage('Generando publicación...');
             const webhookResult = await triggerN8nWorkflow(webhookPayload);
 
             if (webhookResult.success) {
@@ -239,12 +249,14 @@ export function useSearchForm() {
             addToast(`Error: ${errorMsg}`, 'error');
         } finally {
             setLoading(false);
+            setStatusMessage('');
         }
     }, [formData, addToast, navigate]);
 
     return {
         // State
         loading,
+        statusMessage,
         currentStep,
         formData,
         createdSearch,

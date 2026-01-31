@@ -7,7 +7,7 @@ import {
     type SortingState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { ArrowUpDown, Mail, MessageSquare, Calendar } from 'lucide-react';
+import { ArrowUpDown, Mail, MessageSquare, Calendar, FileText } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
@@ -22,12 +22,14 @@ export interface Candidate {
     comentarios_admin: string;
     fecha_entrevista?: string;
     booking_token?: string;
+    cv_text_or_url?: string;
 }
 
 interface CandidateTableProps {
     data: Candidate[];
     onUpdateComment: (id: string, comment: string) => void;
     onSchedule: (id: string) => void;
+    onViewCv: (url: string) => void;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -43,7 +45,7 @@ const getStatusBadgeVariant = (status: string) => {
 
 const columnHelper = createColumnHelper<Candidate>();
 
-export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateTableProps) {
+export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv }: CandidateTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
 
     const columns = [
@@ -64,7 +66,21 @@ export function CandidateTable({ data, onUpdateComment, onSchedule }: CandidateT
                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300 font-bold text-xs border border-emerald-500/30">
                         {info.getValue()?.charAt(0).toUpperCase()}
                     </div>
-                    <div className="font-medium text-white">{info.getValue()}</div>
+                    <div className="font-medium text-white">
+                        {info.getValue()}
+                        {info.row.original.cv_text_or_url?.startsWith('http') && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onViewCv(info.row.original.cv_text_or_url!);
+                                }}
+                                className="ml-2 inline-flex items-center gap-1 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 hover:bg-blue-500/30 transition-colors"
+                            >
+                                <FileText size={10} />
+                                CV
+                            </button>
+                        )}
+                    </div>
                 </div>
             ),
         }),

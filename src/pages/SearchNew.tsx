@@ -14,6 +14,7 @@ export default function SearchNew() {
     const {
         // State
         loading,
+        statusMessage,
         currentStep,
         formData,
         createdSearch,
@@ -234,7 +235,7 @@ export default function SearchNew() {
                                         isLoading={loading}
                                         icon={<Zap size={18} />}
                                     >
-                                        Sí, Crear Búsqueda
+                                        {loading ? statusMessage || 'Creando...' : 'Sí, Crear Búsqueda'}
                                     </Button>
                                 </div>
                             </div>
