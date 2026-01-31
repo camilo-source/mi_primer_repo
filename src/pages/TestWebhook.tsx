@@ -25,7 +25,7 @@ export default function TestWebhook() {
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json().catch(e => ({ error: 'Invalid JSON' }));
+            const data = await response.json().catch(_ => ({ error: 'Invalid JSON' }));
 
             setDetails(JSON.stringify({
                 status: response.status,
