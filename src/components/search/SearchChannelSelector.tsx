@@ -40,19 +40,19 @@ export function SearchChannelSelector({ channels, onChange }: SearchChannelSelec
                             key={item.key}
                             onClick={() => toggleChannel(item.key as keyof ChannelConfig)}
                             className={`
-                                relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
-                                ${isActive
+                                    relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 overflow-hidden
+                                    ${isActive
                                     ? `border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-lg shadow-${item.color.split('-')[1]}-500/10`
                                     : 'border-white/5 bg-white/5 opacity-60 grayscale hover:opacity-80'
                                 }
-                            `}
+                                `}
                         >
                             <div className={`p-3 rounded-lg ${isActive ? item.bg : 'bg-gray-800'}`}>
                                 <Icon size={24} className={isActive ? item.color : 'text-gray-400'} />
                             </div>
 
-                            <div className="flex-1 text-left">
-                                <h3 className={`font-semibold ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
+                            <div className="flex-1 text-left min-w-0">
+                                <h3 className={`font-semibold truncate ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`} title={item.label}>
                                     {item.label}
                                 </h3>
                                 <div className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-2">
@@ -63,7 +63,7 @@ export function SearchChannelSelector({ channels, onChange }: SearchChannelSelec
 
                             {/* Toggle Switch Visual */}
                             <div className={`
-                                w-10 h-6 rounded-full transition-colors relative
+                                w-10 h-6 shrink-0 rounded-full transition-colors relative
                                 ${isActive ? 'bg-emerald-500' : 'bg-gray-700'}
                             `}>
                                 <div className={`
