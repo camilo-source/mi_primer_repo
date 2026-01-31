@@ -7,35 +7,15 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Cliente con service role para bypass RLS
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL ||
+    'https://n8n.metanoian8n.com/webhook/68440768-004a-4aa8-9127-f3130b99d6ca';
+
 /**
- * 🎯 WEBHOOK PARA N8N - RECIBE DATOS PROCESADOS POR IA
+ * Unified n8n API endpoint
  * 
- * Este endpoint recibe los candidatos procesados por la IA en n8n
- * y los guarda en la base de datos de Supabase.
- * 
- * Método: POST
- * URL: https://tu-dominio.vercel.app/api/n8n/webhook
- * 
- * Headers permitidos:
- * - Content-Type: application/json
- * - Authorization: Bearer <token> (opcional - si se configura N8N_WEBHOOK_SECRET)
- * 
- * Body esperado:
- * {
- *   "id_busqueda_n8n": "uuid-de-la-busqueda",
- *   "candidato": {
- *     "nombre": "Juan Pérez",
- *     "email": "juan@example.com",
- *     "resumen_ia": "Desarrollador Full Stack con 5 años...",
- *     "score_ia": 85
- *   }
- * }
- * 
- * O formato batch:
- * {
- *   "id_busqueda_n8n": "uuid-de-la-busqueda",
- *   "candidatos": [...]
- * }
+ * Handles two operations:
+ * 1. POST /api/n8n?action=trigger - Proxy to trigger n8n workflow (from frontend)
+ * 2. POST /api/n8n - Receive processed candidates from n8n (webhook)
  */
 
 interface Candidato {
@@ -47,55 +27,63 @@ interface Candidato {
 
 interface WebhookPayload {
     id_busqueda_n8n: string;
-    candidato?: Candidato;  // Single candidate
-    candidatos?: Candidato[]; // Batch of candidates
+    candidato?: Candidato;
+    candidatos?: Candidato[];
 }
 
-// Configurar CORS para permitir requests desde n8n
 function setCorsHeaders(res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-export default async function handler(
-    req: VercelRequest,
-    res: VercelResponse
-) {
-    // Configurar CORS
-    setCorsHeaders(res);
+// Handler for triggering n8n workflow (proxy)
+async function handleTrigger(req: VercelRequest, res: VercelResponse) {
+    try {
+        console.log('[n8n Trigger] Forwarding request to n8n...');
+        console.log('[n8n Trigger] Payload:', JSON.stringify(req.body, null, 2));
 
-    // Manejar preflight OPTIONS
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    // Solo permitir POST
-    if (req.method !== 'POST') {
-        return res.status(405).json({
-            success: false,
-            error: 'Método no permitido. Usar POST.'
+        const response = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(req.body),
         });
-    }
 
-    // Verificar autenticación opcional (si está configurada)
-    const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
-    if (webhookSecret) {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader !== `Bearer ${webhookSecret}`) {
-            return res.status(401).json({
-                success: false,
-                error: 'Autenticación inválida'
+        console.log('[n8n Trigger] Response status:', response.status);
+
+        if (response.ok) {
+            const data = await response.json().catch(() => ({}));
+            return res.status(200).json({
+                success: true,
+                data
             });
         }
-    }
 
+        const errorText = await response.text();
+        console.error('[n8n Trigger] Error from n8n:', errorText);
+
+        return res.status(response.status).json({
+            success: false,
+            error: errorText
+        });
+
+    } catch (error) {
+        console.error('[n8n Trigger] Error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}
+
+// Handler for receiving candidates from n8n (webhook)
+async function handleWebhook(req: VercelRequest, res: VercelResponse) {
     try {
         const payload: WebhookPayload = req.body;
-
         console.log('📥 Webhook recibido:', JSON.stringify(payload, null, 2));
 
-        // Validar payload
         if (!payload.id_busqueda_n8n) {
             return res.status(400).json({
                 success: false,
@@ -103,7 +91,6 @@ export default async function handler(
             });
         }
 
-        // Normalizar: aceptar tanto "candidato" (single) como "candidatos" (array)
         let candidatos: Candidato[] = [];
 
         if (payload.candidato) {
@@ -124,7 +111,6 @@ export default async function handler(
             });
         }
 
-        // Verificar que la búsqueda existe
         const { data: busqueda, error: busquedaError } = await supabase
             .from('busquedas')
             .select('id_busqueda_n8n, titulo')
@@ -141,7 +127,6 @@ export default async function handler(
 
         console.log(`📥 Procesando ${candidatos.length} candidato(s) para búsqueda: ${busqueda.titulo}`);
 
-        // Preparar candidatos para inserción (solo campos que existen en tabla postulantes)
         const candidatosParaInsertar = candidatos.map(candidato => ({
             id_busqueda_n8n: payload.id_busqueda_n8n,
             nombre: candidato.nombre || 'Sin nombre',
@@ -152,7 +137,6 @@ export default async function handler(
             comentarios_admin: null
         }));
 
-        // Insertar candidatos en tabla POSTULANTES (no candidatos)
         const { data: candidatosInsertados, error: insertError } = await supabase
             .from('postulantes')
             .insert(candidatosParaInsertar)
@@ -169,7 +153,6 @@ export default async function handler(
 
         console.log(`✅ ${candidatosInsertados?.length || 0} candidato(s) guardado(s) exitosamente`);
 
-        // Respuesta exitosa
         return res.status(200).json({
             success: true,
             message: `${candidatosInsertados?.length || 0} candidato(s) procesado(s) exitosamente`,
@@ -193,5 +176,29 @@ export default async function handler(
             error: 'Error interno del servidor',
             details: error.message
         });
+    }
+}
+
+export default async function handler(
+    req: VercelRequest,
+    res: VercelResponse
+) {
+    setCorsHeaders(res);
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Check if this is a trigger request (from frontend) or webhook (from n8n)
+    const action = req.query.action as string;
+
+    if (action === 'trigger') {
+        return handleTrigger(req, res);
+    } else {
+        return handleWebhook(req, res);
     }
 }

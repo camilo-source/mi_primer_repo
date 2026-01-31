@@ -8,7 +8,7 @@
  */
 
 // URL del proxy API que redirige a n8n
-const N8N_WEBHOOK_URL = '/api/n8n/trigger';
+const N8N_WEBHOOK_URL = '/api/n8n?action=trigger';
 
 /**
  * Payload que se envía al webhook de n8n
