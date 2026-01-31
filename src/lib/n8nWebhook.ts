@@ -44,6 +44,16 @@ export interface SearchWebhookPayload {
     // URLs
     application_url: string;
     flyer_url?: string;
+
+    // Configuración de Canales
+    channels?: {
+        linkedin: boolean;
+        instagram: boolean;
+        slack: boolean;
+        email_marketing: boolean;
+        whatsapp: boolean;
+        job_portals: boolean;
+    };
 }
 
 /**
@@ -193,6 +203,14 @@ export function buildWebhookPayload(
         idiomas?: { idioma: string; nivel: string }[] | string[];
         extras?: string;
         flyer_url?: string;
+        channels?: {
+            linkedin: boolean;
+            instagram: boolean;
+            slack: boolean;
+            email_marketing: boolean;
+            whatsapp: boolean;
+            job_portals: boolean;
+        };
     },
     searchId: string
 ): SearchWebhookPayload {
@@ -229,5 +247,6 @@ export function buildWebhookPayload(
         extras: formData.extras || '',
         application_url: `${baseUrl}/apply/${searchId}`,
         flyer_url: formData.flyer_url,
+        channels: formData.channels,
     };
 }

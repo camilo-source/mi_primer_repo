@@ -30,6 +30,18 @@ export interface SearchFormData {
     requisitos_excluyentes: string[];
     requisitos_deseables: string[];
     extras: string;
+
+    // Canales de difusión
+    channels: ChannelConfig;
+}
+
+export interface ChannelConfig {
+    linkedin: boolean;
+    instagram: boolean;
+    slack: boolean;
+    email_marketing: boolean;
+    whatsapp: boolean;
+    job_portals: boolean;
 }
 
 export interface IdiomaEntry {
@@ -69,5 +81,15 @@ export const initialSearchFormData: SearchFormData = {
     // Requisitos
     requisitos_excluyentes: [],
     requisitos_deseables: [],
-    extras: ''
+    extras: '',
+
+    // Canales por defecto (Todos activos para máxima difusión)
+    channels: {
+        linkedin: true,
+        instagram: true,
+        slack: true,
+        email_marketing: true,
+        whatsapp: true,
+        job_portals: true
+    }
 };

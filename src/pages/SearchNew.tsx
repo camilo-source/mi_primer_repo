@@ -5,7 +5,8 @@ import { useSearchForm } from '../hooks/useSearchForm';
 import {
     SearchFormInfo,
     SearchFormCombined,
-    SearchSuccess
+    SearchSuccess,
+    SearchChannelSelector
 } from '../components/search';
 import { useState } from 'react';
 
@@ -19,6 +20,7 @@ export default function SearchNew() {
         // Setters
         setCurrentStep,
         updateField,
+        updateChannels,
         // Skill handlers
         newSkill,
         setNewSkill,
@@ -41,16 +43,16 @@ export default function SearchNew() {
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    // Handle form submission - only on step 2
+    // Handle form submission - only on step 3
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Prevent submission on step 1
-        if (currentStep < 2) {
+        // Prevent submission if not on last step
+        if (currentStep < 3) {
             return;
         }
 
-        // Show confirmation dialog on step 2
+        // Show confirmation dialog on last step
         setShowConfirmDialog(true);
     };
 
@@ -73,7 +75,7 @@ export default function SearchNew() {
         );
     }
 
-    // Multi-step form (2 steps now)
+    // Multi-step form (3 steps now)
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             {/* Header */}
@@ -93,7 +95,7 @@ export default function SearchNew() {
 
             {/* Step Indicators */}
             <div className="flex items-center justify-center gap-2">
-                {[1, 2].map(step => (
+                {[1, 2, 3].map(step => (
                     <button
                         key={step}
                         type="button"
@@ -110,6 +112,7 @@ export default function SearchNew() {
                         <span className="hidden sm:inline text-sm font-medium">
                             {step === 1 && 'Información'}
                             {step === 2 && 'Perfil del Candidato'}
+                            {step === 3 && 'Canales'}
                         </span>
                     </button>
                 ))}
@@ -148,6 +151,13 @@ export default function SearchNew() {
                         />
                     )}
 
+                    {currentStep === 3 && (
+                        <SearchChannelSelector
+                            channels={formData.channels}
+                            onChange={updateChannels}
+                        />
+                    )}
+
                     {/* Navigation */}
                     <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
                         <div>
@@ -171,7 +181,7 @@ export default function SearchNew() {
                                 Cancelar
                             </Button>
 
-                            {currentStep < 2 ? (
+                            {currentStep < 3 ? (
                                 <Button
                                     type="button"
                                     onClick={() => setCurrentStep(prev => prev + 1)}

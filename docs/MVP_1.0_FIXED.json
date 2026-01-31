@@ -1,0 +1,309 @@
+{
+    "name": "MVP 1.0 FIXED",
+    "nodes": [
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                192,
+                -128
+            ],
+            "id": "3927f0ab-edbe-400e-a922-c9c41ab12916",
+            "name": "Google Gemini Chat Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[IDENTITY & OBJECTIVE]\nEres un Senior Talent Acquisition Specialist y experto en Employer Branding. Tu objetivo es crear una descripción de puesto atractiva, profesional y orientada al employer branding.\n\n[INPUT DATA]\nDATOS DE LA EMPRESA:\nNombre Empresa: {{ $json.empresa }}\nRubro: {{ $json.rubro }}\nDescripción Empresa: {{ $json.descripcion_empresa }}\n\nDATOS DEL PUESTO:\nPuesto: {{ $json.nombre_puesto }}\nDescripción: {{ $json.descripcion_puesto }}\nHabilidades Técnicas: {{ $json.habilidades_tecnicas_texto }}\nHabilidades Blandas: {{ $json.habilidades_blandas_texto }}\nExperiencia: {{ $json.experiencia_previa }}\nNivel Formación: {{ $json.nivel_formacion }}\nDisponibilidad: {{ $json.disponibilidad }}\nModalidad: {{ $json.modalidad }}\nUbicación: {{ $json.ubicacion }}\nIdiomas: {{ $json.idiomas_texto }}\nExtras: {{ $json.extras }}\n\nLINK FORMULARIO DE POSTULACIÓN (OBLIGATORIO INCLUIR): {{ $json.application_url }}\n\n[INSTRUCCIONES]\n1. USA LOS DATOS PROPORCIONADOS ARRIBA - NO uses placeholders como [Nombre Empresa], usa directamente el valor proporcionado\n2. Si un campo está vacío o dice \"Sin especificar\", omítelo elegantemente\n3. Genera la publicación en español\n4. Incluye emojis para hacerlo más atractivo\n5. AL FINAL, incluye el link de postulación de forma prominente\n\n[FORMATO DE SALIDA]\nGenera una publicación de LinkedIn atractiva de máximo 3000 caracteres que:\n- Enganche desde el título\n- Destaque la cultura de la empresa\n- Liste los requisitos de forma atractiva\n- Termine con un CTA claro incluyendo el link: {{ $json.application_url }}\n\n[GENERAR AHORA]",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                192,
+                -320
+            ],
+            "id": "eee4ce5a-d459-40b4-872b-c0cf8233e024",
+            "name": "GENERA TEXTO"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                1024,
+                -144
+            ],
+            "id": "c7222e24-043d-4ec7-90e3-740e42e5b081",
+            "name": "Google Gemini Chat Model3",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[IDENTITY & OBJECTIVE]\nEres un Director de Arte y Experto en Ingeniería de Prompts para generación de imágenes. Tu objetivo es crear un prompt para generar una imagen profesional y atractiva para una publicación de empleo en LinkedIn.\n\n[INPUT DATA - JOB DETAILS]\nNombre Empresa: {{ $json.empresa }}\nRubro: {{ $json.rubro }}\nPuesto (Título Principal): {{ $json.nombre_puesto }}\nUbicación: {{ $json.ubicacion }}\nModalidad: {{ $json.modalidad }}\n\n[INSTRUCCIONES]\n1. Genera un prompt en inglés para crear una imagen profesional\n2. La imagen debe ser corporativa, moderna y atractiva\n3. Incluye elementos visuales relacionados con el rubro y puesto\n4. Usa colores profesionales (azules, verdes, tonos corporativos)\n5. NO incluyas texto en la imagen\n6. Formato: cuadrado, fondo limpio, estilo minimalista profesional\n\n[GENERAR PROMPT DE IMAGEN AHORA]",
+                "options": {
+                    "passthroughBinaryImages": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                1024,
+                -320
+            ],
+            "id": "24525f0f-80a2-4569-9475-771c69c51ae5",
+            "name": "GENERA PROMPT IMAGEN"
+        },
+        {
+            "parameters": {
+                "resource": "image",
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-3-pro-image-preview",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-3-pro-image-preview (Nano Banana Pro)"
+                },
+                "prompt": "={{ $json.output }}",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                1424,
+                -320
+            ],
+            "id": "e4544117-3864-47f0-9e47-db7e1b8e315a",
+            "name": "PUBLICACION",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "postAs": "organization",
+                "organization": "111082075",
+                "text": "={{ $('Code in JavaScript').item.json.textoPlano }}",
+                "shareMediaCategory": "IMAGE",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.linkedIn",
+            "typeVersion": 1,
+            "position": [
+                1664,
+                -320
+            ],
+            "id": "a585f6bd-a586-42e8-a3c7-e9dc8b93bf95",
+            "name": "POSTEA IMAGEN + LINK",
+            "credentials": {
+                "linkedInOAuth2Api": {
+                    "id": "FMFKvHT3ABzQmaqI",
+                    "name": "LinkedIn account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "sendTo": "camilo@metanoia.net.ar",
+                "subject": "=✨ Nueva Publicación: {{ $('Prepara Datos').item.json.empresa }} - {{ $('Prepara Datos').item.json.nombre_puesto }}",
+                "emailType": "html",
+                "message": "=<h2>📋 Nueva Publicación de Empleo Generada</h2>\n<p><strong>Empresa:</strong> {{ $('Prepara Datos').item.json.empresa }}</p>\n<p><strong>Puesto:</strong> {{ $('Prepara Datos').item.json.nombre_puesto }}</p>\n<p><strong>Link de postulación:</strong> <a href=\"{{ $('Prepara Datos').item.json.application_url }}\">{{ $('Prepara Datos').item.json.application_url }}</a></p>\n<hr>\n<h3>📝 Texto para LinkedIn:</h3>\n<div style=\"background: #f5f5f5; padding: 15px; border-radius: 8px;\">\n{{ $json.textoHTML }}\n</div>",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.2,
+            "position": [
+                800,
+                -320
+            ],
+            "id": "ebe0ef1a-c15b-4c1a-aa32-383d287dfcce",
+            "name": "Send a message",
+            "webhookId": "70a39223-0f8b-4ed9-b68f-a9914e191932",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "dUjvkY8WhqIuy9jf",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const textoCrudo = $input.first().json.output;\n\n// Texto plano (para copiar y pegar)\nconst textoPlano = textoCrudo.replace(/\\\\n/g, '\\n');\n\n// Texto HTML (para el email)\nconst textoHTML = '<p>' + textoCrudo\n  .replace(/\\\\n\\\\n/g, '</p><p>')\n  .replace(/\\\\n/g, '<br>')\n  .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') +\n'</p>';\n\n// Pasar también los datos originales para referencias posteriores\nconst datosOriginales = $('Prepara Datos').first().json;\n\nreturn [{\n  textoPlano,\n  textoHTML,\n  ...datosOriginales\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                544,
+                -320
+            ],
+            "id": "6ab0fa7f-8e5e-4eee-9ec5-853670d94cba",
+            "name": "Code in JavaScript"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================\n// PREPARA DATOS - Preserva nombres originales\n// ============================================\nconst input = $input.first().json;\n\n// Función helper para convertir arrays a texto\nconst arrayToText = (arr) => {\n  if (!arr || !Array.isArray(arr)) return '';\n  return arr.filter(item => item && item.trim && item.trim()).join(', ');\n};\n\n// Construir el objeto preservando TODOS los nombres originales\nconst prepared = {\n  // === DATOS ORIGINALES (para uso en prompts de IA) ===\n  empresa: input.empresa || 'Empresa',\n  rubro: input.rubro || 'Sin especificar',\n  descripcion_empresa: input.descripcion_empresa || '',\n  nombre_puesto: input.nombre_puesto || 'Puesto',\n  descripcion_puesto: input.descripcion_puesto || input.nombre_puesto || '',\n  experiencia_previa: input.experiencia_previa || 'Sin especificar',\n  nivel_formacion: input.nivel_formacion || 'Cualquiera',\n  disponibilidad: input.disponibilidad || 'Full Time',\n  modalidad: input.modalidad || 'Sin especificar',\n  ubicacion: input.ubicacion || 'Sin especificar',\n  extras: input.extras || '',\n  application_url: input.application_url || '',\n  id_busqueda: input.id_busqueda || '',\n  \n  // === ARRAYS ORIGINALES ===\n  habilidades_tecnicas: input.habilidades_tecnicas || [],\n  habilidades_blandas: input.habilidades_blandas || [],\n  idiomas: input.idiomas || [],\n  \n  // === VERSIONES TEXTO (para insertar en prompts) ===\n  habilidades_tecnicas_texto: arrayToText(input.habilidades_tecnicas),\n  habilidades_blandas_texto: arrayToText(input.habilidades_blandas),\n  idiomas_texto: arrayToText(input.idiomas)\n};\n\nconsole.log('Datos preparados:', JSON.stringify(prepared, null, 2));\n\nreturn [{ json: prepared }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -96,
+                -320
+            ],
+            "id": "04455ab4-8b27-48e2-8d44-259bbf4cd0bc",
+            "name": "Prepara Datos"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "68440768-004a-4aa8-9127-f3130b99d6ca",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -432,
+                -320
+            ],
+            "id": "0b61207f-ae41-43b5-a63c-a3758e195e90",
+            "name": "RECIBE LA INFO DE BUSQUEDA",
+            "webhookId": "68440768-004a-4aa8-9127-f3130b99d6ca"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "GENERA TEXTO",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GENERA TEXTO": {
+            "main": [
+                [
+                    {
+                        "node": "Code in JavaScript",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model3": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "GENERA PROMPT IMAGEN",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GENERA PROMPT IMAGEN": {
+            "main": [
+                [
+                    {
+                        "node": "PUBLICACION",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PUBLICACION": {
+            "main": [
+                [
+                    {
+                        "node": "POSTEA IMAGEN + LINK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "POSTEA IMAGEN + LINK": {
+            "main": [
+                []
+            ]
+        },
+        "Code in JavaScript": {
+            "main": [
+                [
+                    {
+                        "node": "Send a message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send a message": {
+            "main": [
+                [
+                    {
+                        "node": "GENERA PROMPT IMAGEN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepara Datos": {
+            "main": [
+                [
+                    {
+                        "node": "GENERA TEXTO",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "RECIBE LA INFO DE BUSQUEDA": {
+            "main": [
+                [
+                    {
+                        "node": "Prepara Datos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "fixed-v1",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "141add6b2709217e45656e8204b73206cfebfd47c07ab1b3e0f2214eebc6b807"
+    },
+    "id": "SKUIuUFEAI7HNzoL",
+    "tags": []
+}

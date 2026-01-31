@@ -1,0 +1,571 @@
+{
+    "name": "ANTIGRAVITY ULTRA v3 (CHANNELS CONTROL)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "68440768-004a-4aa8-9127-f3130b99d6ca",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -600,
+                0
+            ],
+            "id": "webhook-trigger",
+            "name": "RECIBE INFO DE BUSQUEDA",
+            "webhookId": "68440768-004a-4aa8-9127-f3130b99d6ca"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================\n// PREPARA DATOS - NORMALIZACIÓN ANTIGRAVITY\n// ============================================\nconst input = $input.first().json;\n\n// Función helper para convertir arrays a texto\nconst arrayToText = (arr) => {\n  if (!arr || !Array.isArray(arr)) return '';\n  return arr.filter(item => item && item.trim && item.trim()).join(', ');\n};\n\n// Construir el objeto preservando TODOS los nombres originales\nconst prepared = {\n  // === DATOS ORIGINALES (para uso en prompts de IA) ===\n  'NOMBRE DE LA EMPRESA': input.empresa || 'Empresa Confidencial',\n  'RUBRO DE LA EMPRESA': input.rubro || 'Sin especificar',\n  'DESCRIPCIÓN DE LA EMPRESA': input.descripcion_empresa || '',\n  'DESCRIBA EL PUESTO': input.nombre_puesto || 'Puesto',\n  'HABILIDADES TÉCNICAS NECESARIAS': arrayToText(input.habilidades_tecnicas),\n  'HABILIDADES BLANDAS NECESARIAS': arrayToText(input.habilidades_blandas),\n  'EXPERIENCIA PREVIA NECESARIA': input.experiencia_previa || 'Sin especificar',\n  'MODALIDAD': input.modalidad || 'Híbrido',\n  'Ubicación': input.ubicacion || 'Sin especificar',\n  'application_url': input.application_url || '',\n  'id_busqueda': input.id_busqueda || '',\n  \n  // Configuración de Canales (Pasamos el objeto completo)\n  'channels': input.channels || { linkedin: true, instagram: true, slack: true, email_marketing: true, whatsapp: true, job_portals: true },\n  \n  // Metadata para logs\n  'timestamp': new Date().toISOString()\n};\n\nreturn [{ json: prepared }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -380,
+                0
+            ],
+            "id": "prepara-datos",
+            "name": "PREPARA DATOS"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                -160,
+                250
+            ],
+            "id": "gemini-model-1",
+            "name": "Gemini Pro Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[IDENTITY & ROLE]\nEres el Director de Talent Branding de Antigravity. Tu especialidad es el \"Psychological Recruiting\": sabes exactamente qué fibras tocar para que un A-Player (un candidato de alto rendimiento) deje su trabajo actual por una nueva oportunidad. Eres experto en Copywriting, Neuromarketing y algoritmos de redes sociales.\n\n[OBJECTIVE]\nGenerar una campaña de reclutamiento omnicanal para el puesto de {{ $json['DESCRIBA EL PUESTO'] }}.\n\n[INPUT DATA]\n- Empresa: {{ $json['NOMBRE DE LA EMPRESA'] }}\n- Rubro/Cultura: {{ $json['RUBRO DE LA EMPRESA'] }} | {{ $json['DESCRIPCIÓN DE LA EMPRESA'] }}\n- Puesto: {{ $json['DESCRIBA EL PUESTO'] }}\n- Requisitos: {{ $json['HABILIDADES TÉCNICAS NECESARIAS'] }} | {{ $json['EXPERIENCIA PREVIA NECESARIA'] }}\n- Soft Skills: {{ $json['HABILIDADES BLANDAS NECESARIAS'] }}\n- Condiciones: {{ $json['MODALIDAD'] }} | {{ $json['Ubicación'] }}\n- Link Postulación: {{ $json.application_url }}\n\n[INTERNAL STRATEGY & LOGIC - CHAIN OF THOUGHT]\n1. ANALISIS DE ESCASEZ: \"Si el puesto es Tech Senior, resalta la libertad técnica y el stack. Si es Ventas, resalta las comisiones y la expansión de mercado\".\n2. CONVERSION DE BENEFICIOS: Transformar descripciones aburridas como \"OSDE 310\" en \"Cuidamos de vos y tu familia con cobertura médica premium desde el día 1\".\n3. EMOJIS ESTRATÉGICOS: No usar emojis al azar. Usar 🚀 para metas, 🧠 para conocimiento y 📍 para ubicación.\n\n[OUTPUT FORMAT - GENERAR SECCIONES SEPARADAS]\n\n:::LINKEDIN_START:::\n(Post de autoridad, storytelling y hashtags profesionales. Estructura: Gancho -> Problema -> Héroe -> Requisitos -> CTA).\n:::LINKEDIN_END:::\n\n:::INSTAGRAM_START:::\n(Copy corto, visual, enfocado en cultura y beneficios. Work-life balance resaltado).\n:::INSTAGRAM_END:::\n\n:::SLACK_START:::\n(Llamado a la acción interno: \"Equipo, ¿quién conoce al mejor para este rol?\". Incentivo de referido).\n:::SLACK_END:::\n\n:::EMAIL_SUBJECT_START:::\n(Genera 2 opciones: 1. Directa, 2. Intrigante. SOLO EL TEXTO).\n:::EMAIL_SUBJECT_END:::\n\n:::EMAIL_BODY_START:::\n(Estructura de Email Marketing: Saludo personalizable, el 'por qué' de la vacante, y botón de acción).\n:::EMAIL_BODY_END:::\n\n:::WHATSAPP_START:::\n(Mensaje ultra directo con emojis, ideal para lectura rápida en 3 segundos).\n:::WHATSAPP_END:::\n\n[OBLIGATORIO]\n- El link de postulación ({{ $json.application_url }}) debe aparecer en TODAS las versiones.\n- Usa formato Markdown.\n- Idioma: Español neutro de alta calidad.",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                -160,
+                0
+            ],
+            "id": "talent-magnet",
+            "name": "THE TALENT MAGNET v2"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                200,
+                250
+            ],
+            "id": "gemini-model-2",
+            "name": "Gemini Pro Model 2",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[ROLE]\nDirector de Arte Publicitario y Semiólogo Visual.\n\n[TASK]\nCrea un prompt para un generador de imágenes (Gemini/DALL-E) que combine el estilo del flyer de referencia con la psicología del puesto \"{{ $('PREPARA DATOS').item.json['DESCRIBA EL PUESTO'] }}\" de la empresa \"{{ $('PREPARA DATOS').item.json['NOMBRE DE LA EMPRESA'] }}\".\n\n[STYLING RULES]\n1. ANÁLISIS DE MARCA: Extrae o infiere los colores de la marca. Si no hay info, usa psicología del color según el rubro \"{{ $('PREPARA DATOS').item.json['RUBRO DE LA EMPRESA'] }}\".\n2. JERARQUÍA DE INFORMACIÓN: Especifica que el título del puesto debe ocupar el 40% de la composición visual para legibilidad en móviles.\n3. COMPOSICIÓN: Diseño minimalista suizo. Espacio negativo suficiente.\n4. ELEMENTOS: Integra elementos abstractos del rubro en el fondo.\n\n[OUTPUT]\nSolo devuelve el prompt de la imagen en INGLÉS. Debe incluir la instrucción \"Text '{{ $('PREPARA DATOS').item.json['DESCRIBA EL PUESTO'] }}' must be clearly visible and occupy 40% of the visual hierarchy\".",
+                "options": {
+                    "passthroughBinaryImages": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                200,
+                0
+            ],
+            "id": "director-art",
+            "name": "DIRECTOR OF ART v2"
+        },
+        {
+            "parameters": {
+                "resource": "image",
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-3-pro-image-preview",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-3-pro-image-preview (Nano Banana Pro)"
+                },
+                "prompt": "={{ $json.output }}",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                500,
+                0
+            ],
+            "id": "generate-image",
+            "name": "GENERA IMAGEN VISUAL",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================\n// OMNICHANNEL PARSER v2 + TRAFFIC CONTROL\n// ============================================\nconst aiOutput = $('THE TALENT MAGNET v2').first().json.output;\nconst imageBuffer = $('GENERA IMAGEN VISUAL').first().binary;\n\n// Función helper de extracción\nconst extract = (text, start, end) => {\n  const regex = new RegExp(`${start}([\\\\s\\\\S]*?)${end}`);\n  const match = text.match(regex);\n  return match ? match[1].trim() : '';\n};\n\n// Extracción de canales\nconst linkedin = extract(aiOutput, ':::LINKEDIN_START:::', ':::LINKEDIN_END:::');\nconst instagram = extract(aiOutput, ':::INSTAGRAM_START:::', ':::INSTAGRAM_END:::');\nconst slack = extract(aiOutput, ':::SLACK_START:::', ':::SLACK_END:::');\nconst emailSubject = extract(aiOutput, ':::EMAIL_SUBJECT_START:::', ':::EMAIL_SUBJECT_END:::');\nconst emailBody = extract(aiOutput, ':::EMAIL_BODY_START:::', ':::EMAIL_BODY_END:::');\nconst whatsappMsg = extract(aiOutput, ':::WHATSAPP_START:::', ':::WHATSAPP_END:::');\n\n// Recuperar datos originales\nconst originalData = $('PREPARA DATOS').first().json;\n\nreturn [{\n  json: {\n    // Banderas de Habilitación (Traffic Control)\n    run_linkedin: originalData.channels?.linkedin ?? true,\n    run_instagram: originalData.channels?.instagram ?? true,\n    run_slack: originalData.channels?.slack ?? true,\n    run_email: originalData.channels?.email_marketing ?? true,\n    run_whatsapp: originalData.channels?.whatsapp ?? true,\n    run_portals: originalData.channels?.job_portals ?? true,\n\n    linkedinBody: linkedin || aiOutput,\n    instagramBody: instagram,\n    slackBody: slack,\n    emailSubject: emailSubject,\n    emailBody: emailBody,\n    whatsappBody: whatsappMsg,\n    timestamp: new Date().toISOString(),\n    jobTitle: originalData['DESCRIBA EL PUESTO'],\n    company: originalData['NOMBRE DE LA EMPRESA'],\n    applicationUrl: originalData['application_url'],\n    ...originalData\n  },\n  binary: imageBuffer ? imageBuffer : undefined\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                0
+            ],
+            "id": "omnichannel-parser",
+            "name": "OMNICHANNEL PARSER"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.run_linkedin }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                -150
+            ],
+            "id": "if-linkedin",
+            "name": "IF LinkedIn"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.run_slack }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                50
+            ],
+            "id": "if-slack",
+            "name": "IF Slack"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.run_email }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                450
+            ],
+            "id": "if-email",
+            "name": "IF Email"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.run_whatsapp }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                650
+            ],
+            "id": "if-whatsapp",
+            "name": "IF WhatsApp"
+        },
+        {
+            "parameters": {
+                "postAs": "organization",
+                "organization": "111082075",
+                "text": "={{ $json.linkedinBody }}",
+                "shareMediaCategory": "IMAGE",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.linkedIn",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                -150
+            ],
+            "id": "linkedin-post",
+            "name": "LINKEDIN POST",
+            "credentials": {
+                "linkedInOAuth2Api": {
+                    "id": "FMFKvHT3ABzQmaqI",
+                    "name": "LinkedIn account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "channel": "reclutamiento-alertas",
+                "text": "={{ $json.slackBody }}",
+                "otherOptions": {
+                    "botProfile": {
+                        "name": "Antigravity Recruiter",
+                        "iconEmoji": ":rocket:"
+                    }
+                },
+                "attachments": [
+                    {
+                        "fallback": "Recomendar candidato",
+                        "actions": [
+                            {
+                                "type": "button",
+                                "text": "🎁 Recomendar Candidato",
+                                "url": "{{ $json.applicationUrl }}?ref=internal"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2.1,
+            "position": [
+                1200,
+                50
+            ],
+            "id": "slack-post",
+            "name": "SLACK (Referidos)",
+            "credentials": {
+                "slackApi": {
+                    "id": "SLACK_PLACEHOLDER_ID",
+                    "name": "Slack Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "sheetId": "1gX...",
+                "range": "A:G",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                250
+            ],
+            "id": "sheets-log",
+            "name": "GOOGLE SHEETS (ROI)",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "SHEETS_PLACEHOLDER_ID",
+                    "name": "Google Sheets Account"
+                }
+            },
+            "notes": "Always runs for logging"
+        },
+        {
+            "parameters": {
+                "url": "https://api.sendgrid.com/v3/mail/send",
+                "method": "POST",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "personalizations",
+                            "value": "=[{ \"to\": [{ \"email\": \"talent-pool@example.com\" }] }]"
+                        },
+                        {
+                            "name": "from",
+                            "value": "={ \"email\": \"hr@antigravity.com\" }"
+                        },
+                        {
+                            "name": "subject",
+                            "value": "={{ $json.emailSubject }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "=[{ \"type\": \"text/plain\", \"value\": \"{{ $json.emailBody }}\" }]"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1200,
+                450
+            ],
+            "id": "email-marketing",
+            "name": "EMAIL MARKETING (Cold Outreach)",
+            "notes": "SendGrid / Mailchimp Placeholder"
+        },
+        {
+            "parameters": {
+                "url": "https://graph.facebook.com/v19.0/PHONE_NUMBER_ID/messages",
+                "method": "POST",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "messaging_product",
+                            "value": "whatsapp"
+                        },
+                        {
+                            "name": "to",
+                            "value": "1234567890"
+                        },
+                        {
+                            "name": "type",
+                            "value": "text"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={ \"body\": \"{{ $json.whatsappBody }} \\n\\nPostulate acá: {{ $json.applicationUrl }}\" }"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1200,
+                650
+            ],
+            "id": "whatsapp-api",
+            "name": "WHATSAPP (Grupos)",
+            "notes": "WhatsApp Business API Placeholder"
+        },
+        {
+            "parameters": {
+                "url": "https://api.multimposter.com/post",
+                "method": "POST",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jobInfo",
+                            "value": "={{ $json }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                850
+            ],
+            "id": "multiposting",
+            "name": "PORTALES (Multiposting)",
+            "notes": "Multiposting (Always active or needs switch)"
+        }
+    ],
+    "connections": {
+        "RECIBE INFO DE BUSQUEDA": {
+            "main": [
+                [
+                    {
+                        "node": "PREPARA DATOS",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PREPARA DATOS": {
+            "main": [
+                [
+                    {
+                        "node": "THE TALENT MAGNET v2",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "DIRECTOR OF ART v2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Pro Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "THE TALENT MAGNET v2",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Pro Model 2": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "DIRECTOR OF ART v2",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "DIRECTOR OF ART v2": {
+            "main": [
+                [
+                    {
+                        "node": "GENERA IMAGEN VISUAL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "THE TALENT MAGNET v2": {
+            "main": [
+                [
+                    {
+                        "node": "OMNICHANNEL PARSER",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GENERA IMAGEN VISUAL": {
+            "main": [
+                [
+                    {
+                        "node": "OMNICHANNEL PARSER",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OMNICHANNEL PARSER": {
+            "main": [
+                [
+                    {
+                        "node": "if-linkedin",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "if-slack",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "if-email",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "if-whatsapp",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "GOOGLE SHEETS (ROI)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "PORTALES (Multiposting)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "if-linkedin": {
+            "main": [
+                [
+                    {
+                        "node": "LINKEDIN POST",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "if-slack": {
+            "main": [
+                [
+                    {
+                        "node": "SLACK (Referidos)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "if-email": {
+            "main": [
+                [
+                    {
+                        "node": "EMAIL MARKETING (Cold Outreach)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "if-whatsapp": {
+            "main": [
+                [
+                    {
+                        "node": "WHATSAPP (Grupos)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

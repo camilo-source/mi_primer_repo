@@ -113,6 +113,10 @@ export function useSearchForm() {
         setFormData(prev => ({ ...prev, [field]: value }));
     }, []);
 
+    const updateChannels = useCallback((channels: SearchFormData['channels']) => {
+        setFormData(prev => ({ ...prev, channels }));
+    }, []);
+
     // --- Submit Handler ---
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -247,6 +251,7 @@ export function useSearchForm() {
         // Setters
         setCurrentStep,
         updateField,
+        updateChannels,
         // Skill handlers
         newSkill,
         setNewSkill,

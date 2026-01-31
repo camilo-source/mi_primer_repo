@@ -94,6 +94,7 @@ export function SearchFormCombined({
                             min="0"
                             value={formData.experiencia_minima}
                             onChange={(e) => updateField('experiencia_minima', parseInt(e.target.value) || 0)}
+                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                             className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                         />
                     </div>
@@ -105,6 +106,7 @@ export function SearchFormCombined({
                             min="0"
                             value={formData.experiencia_maxima}
                             onChange={(e) => updateField('experiencia_maxima', parseInt(e.target.value) || 0)}
+                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                             className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                         />
                     </div>
@@ -122,6 +124,12 @@ export function SearchFormCombined({
                         type="text"
                         value={newIdioma.idioma}
                         onChange={(e) => setNewIdioma({ ...newIdioma, idioma: e.target.value })}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addIdioma();
+                            }
+                        }}
                         placeholder="Ej: Inglés"
                         className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                     />
@@ -194,6 +202,7 @@ export function SearchFormCombined({
                     type="text"
                     value={formData.ubicacion}
                     onChange={(e) => updateField('ubicacion', e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                     placeholder="Ej: Buenos Aires, Argentina"
                     className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                 />

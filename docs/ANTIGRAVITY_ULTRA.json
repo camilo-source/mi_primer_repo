@@ -1,0 +1,356 @@
+{
+    "name": "ANTIGRAVITY ULTRA",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "68440768-004a-4aa8-9127-f3130b99d6ca",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -600,
+                0
+            ],
+            "id": "webhook-trigger",
+            "name": "RECIBE INFO DE BUSQUEDA",
+            "webhookId": "68440768-004a-4aa8-9127-f3130b99d6ca"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================\n// PREPARA DATOS - NORMALIZACIÓN ANTIGRAVITY\n// ============================================\nconst input = $input.first().json;\n\n// Función helper para convertir arrays a texto\nconst arrayToText = (arr) => {\n  if (!arr || !Array.isArray(arr)) return '';\n  return arr.filter(item => item && item.trim && item.trim()).join(', ');\n};\n\n// Construir el objeto preservando TODOS los nombres originales\nconst prepared = {\n  // === DATOS ORIGINALES (para uso en prompts de IA) ===\n  'NOMBRE DE LA EMPRESA': input.empresa || 'Empresa Confidencial',\n  'RUBRO DE LA EMPRESA': input.rubro || 'Sin especificar',\n  'DESCRIPCIÓN DE LA EMPRESA': input.descripcion_empresa || '',\n  'DESCRIBA EL PUESTO': input.nombre_puesto || 'Puesto',\n  'HABILIDADES TÉCNICAS NECESARIAS': arrayToText(input.habilidades_tecnicas),\n  'HABILIDADES BLANDAS NECESARIAS': arrayToText(input.habilidades_blandas),\n  'EXPERIENCIA PREVIA NECESARIA': input.experiencia_previa || 'Sin especificar',\n  'MODALIDAD': input.modalidad || 'Híbrido',\n  'Ubicación': input.ubicacion || 'Sin especificar',\n  'application_url': input.application_url || '',\n  'id_busqueda': input.id_busqueda || '',\n  \n  // Metadata para logs\n  'timestamp': new Date().toISOString()\n};\n\nreturn [{ json: prepared }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -380,
+                0
+            ],
+            "id": "prepara-datos",
+            "name": "PREPARA DATOS"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                -160,
+                220
+            ],
+            "id": "gemini-model-1",
+            "name": "Gemini Pro Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[IDENTITY & ROLE]\nEres el Director de Talent Branding de Antigravity. Tu especialidad es el \"Psychological Recruiting\": sabes exactamente qué fibras tocar para que un A-Player (un candidato de alto rendimiento) deje su trabajo actual por una nueva oportunidad. Eres experto en Copywriting, Neuromarketing y algoritmos de redes sociales.\n\n[OBJECTIVE]\nTu misión es transformar datos técnicos fríos en una narrativa de carrera irresistible. Debes generar una estrategia de contenidos completa para la vacante recibida.\n\n[INPUT DATA]\n- Empresa: {{ $json['NOMBRE DE LA EMPRESA'] }}\n- Rubro/Cultura: {{ $json['RUBRO DE LA EMPRESA'] }} | {{ $json['DESCRIPCIÓN DE LA EMPRESA'] }}\n- Puesto: {{ $json['DESCRIBA EL PUESTO'] }}\n- Requisitos: {{ $json['HABILIDADES TÉCNICAS NECESARIAS'] }} | {{ $json['EXPERIENCIA PREVIA NECESARIA'] }}\n- Soft Skills: {{ $json['HABILIDADES BLANDAS NECESARIAS'] }}\n- Condiciones: {{ $json['MODALIDAD'] }} | {{ $json['Ubicación'] }}\n- Formulario de Aplicación: {{ $json.application_url }}\n\n[INTERNAL STRATEGY & LOGIC]\n1. ANALIZA EL SENIORITY: Si es Senior, enfócate en autonomía y desafíos. Si es Junior, enfócate en aprendizaje y mentoría.\n2. DEFINE EL \"HOOK\": Crea un titular que rompa el patrón del scroll. Prohibido usar \"Estamos buscando...\". Usa \"El futuro de [Rubro] se construye con un [Puesto] que no tema a [Desafío]\".\n3. STORYTELLING CORPORATIVO: Humaniza a la empresa. Convierte la \"Descripción de la Empresa\" en un lugar donde el candidato querría pasar 8 horas al día.\n4. FILTRADO DE RELLENO: Si un dato es \"Indistinto\", conviértelo en un beneficio (ej: \"Flexibilidad total\").\n\n[OUTPUT FORMAT - GENERAR 3 VERSIONES SEPARADAS POR MARCADORES]\n\n:::LINKEDIN_START:::\n(Aquí escribe la versión de LinkedIn)\nEstructura: Gancho -> El problema que resolvemos -> Tu rol como héroe -> Requisitos (bullet points con emojis de check) -> Call to Action directo al link.\nTono: Profesional, inspirador, ambicioso.\n:::LINKEDIN_END:::\n\n:::INSTAGRAM_START:::\n(Aquí escribe la versión de Instagram)\nEstructura: Frase corta e impactante -> 3 puntos clave de por qué amarán este trabajo -> \"Work-life balance\" resaltado -> Instrucciones de aplicación en la Bio/Link.\nTono: Cercano, visual, dinámico. Usa 5 hashtags estratégicos.\n:::INSTAGRAM_END:::\n\n:::SLACK_START:::\n(Aquí escribe la versión interna para Slack)\nEstructura: \"¡Equipo, buscamos a nuestro próximo colega!\" -> Resumen ultra rápido -> Incentivo de referido si existe.\nTono: Colaborativo y entusiasta.\n:::SLACK_END:::\n\n[OBLIGATORIO]\n- El link de postulación ({{ $json.application_url }}) debe aparecer en las 3 versiones de forma natural.\n- Usa formato Markdown (negritas, listas) para facilitar la lectura.\n- Idioma: Español neutro de alta calidad.",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                -160,
+                0
+            ],
+            "id": "talent-magnet",
+            "name": "THE TALENT MAGNET"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                200,
+                220
+            ],
+            "id": "gemini-model-2",
+            "name": "Gemini Pro Model 2",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=[ROLE]\nDirector de Arte Publicitario.\n\n[TASK]\nCrea un prompt para un generador de imágenes (Gemini/DALL-E) que combine el estilo del flyer de referencia con la psicología del puesto \"{{ $('PREPARA DATOS').item.json['DESCRIBA EL PUESTO'] }}\".\n\n[STYLING RULES]\n1. COLORES: Usa la paleta de colores corporativa pero aplica la regla 60-30-10 para jerarquía visual. (Colores sugeridos: Tonos azules profundos y acentos vibrantes).\n2. COMPOSICIÓN: Diseño minimalista suizo. Espacio negativo suficiente para que el texto respire.\n3. ELEMENTOS: En el fondo, integra de forma abstracta elementos de \"{{ $('PREPARA DATOS').item.json['RUBRO DE LA EMPRESA'] }}\". Si es Tech, usa redes neuronales sutiles; si es RRHH, usa formas orgánicas conectadas.\n4. TEXTO CRÍTICO: Debe leerse con claridad absoluta: \"BUSQUEDA LABORAL\" y \"{{ $('PREPARA DATOS').item.json['DESCRIBA EL PUESTO'] }}\".\n\n[OUTPUT]\nSolo devuelve el prompt de la imagen, sin introducciones ni explicaciones. El prompt debe ser en Inglés para mejor compatibilidad con los modelos de imagen.",
+                "options": {
+                    "passthroughBinaryImages": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                200,
+                0
+            ],
+            "id": "director-art",
+            "name": "DIRECTOR OF ART"
+        },
+        {
+            "parameters": {
+                "resource": "image",
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-3-pro-image-preview",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-3-pro-image-preview (Nano Banana Pro)"
+                },
+                "prompt": "={{ $json.output }}",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                500,
+                0
+            ],
+            "id": "generate-image",
+            "name": "GENERA IMAGEN VISUAL",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oQOD9LRrQan5IpKh",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// ============================================\n// SPLIT & DISTRIBUTE - PARSER INTELIGENTE\n// ============================================\nconst aiOutput = $('THE TALENT MAGNET').first().json.output;\nconst imageBuffer = $('GENERA IMAGEN VISUAL').first().binary;\n\n// Funciones regex para extraer el contenido entre marcadores\nconst extractContent = (text, startMarker, endMarker) => {\n  const regex = new RegExp(`${startMarker}([\\\\s\\\\S]*?)${endMarker}`);\n  const match = text.match(regex);\n  return match ? match[1].trim() : '';\n};\n\nconst linkedinClean = extractContent(aiOutput, ':::LINKEDIN_START:::', ':::LINKEDIN_END:::');\nconst instagramClean = extractContent(aiOutput, ':::INSTAGRAM_START:::', ':::INSTAGRAM_END:::');\nconst slackClean = extractContent(aiOutput, ':::SLACK_START:::', ':::SLACK_END:::');\n\n// Si fallan los marcadores, usar todo el output como fallback para LinkedIn\nconst linkedinFinal = linkedinClean || aiOutput;\n\n// Recuperar datos originales para el log\nconst originalData = $('PREPARA DATOS').first().json;\n\nreturn [{\n  json: {\n    linkedinBody: linkedinFinal,\n    instagramBody: instagramClean,\n    slackBody: slackClean,\n    ...originalData\n  },\n  // Pasamos el binario de la imagen solo si existe\n  binary: imageBuffer ? imageBuffer : undefined\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                0
+            ],
+            "id": "split-distribute",
+            "name": "SPLIT & DISTRIBUTE"
+        },
+        {
+            "parameters": {
+                "postAs": "organization",
+                "organization": "111082075",
+                "text": "={{ $json.linkedinBody }}",
+                "shareMediaCategory": "IMAGE",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.linkedIn",
+            "typeVersion": 1,
+            "position": [
+                1100,
+                -150
+            ],
+            "id": "linkedin-post",
+            "name": "LINKEDIN POST (Autoridad)",
+            "credentials": {
+                "linkedInOAuth2Api": {
+                    "id": "FMFKvHT3ABzQmaqI",
+                    "name": "LinkedIn account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "channel": "reclutamiento-alertas",
+                "text": "={{ $json.slackBody }}",
+                "otherOptions": {
+                    "botProfile": {
+                        "name": "Antigravity Recruiter",
+                        "iconEmoji": ":rocket:"
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2.1,
+            "position": [
+                1100,
+                50
+            ],
+            "id": "slack-post",
+            "name": "SLACK MSG (Interno)",
+            "credentials": {
+                "slackApi": {
+                    "id": "SLACK_PLACEHOLDER_ID",
+                    "name": "Slack Account"
+                }
+            },
+            "notes": "CONFIGURAR CREDENCIALES"
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "sheetId": "1gX... (ID DE TU SHEET)",
+                "range": "A:E",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                250
+            ],
+            "id": "sheets-log",
+            "name": "GOOGLE SHEETS (Memoria)",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "SHEETS_PLACEHOLDER_ID",
+                    "name": "Google Sheets Account"
+                }
+            },
+            "notes": "CONFIGURAR CREDENCIALES Y SHEET ID"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/ME/media",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "caption",
+                            "value": "={{ $json.instagramBody }}"
+                        },
+                        {
+                            "name": "image_url",
+                            "value": "URL_PUBLICA_DE_IMAGEN_TEMPORAL (Requiere paso extra de upload)"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                450
+            ],
+            "id": "instagram-post",
+            "name": "INSTAGRAM (Placeholder)",
+            "notes": "Requiere subir imagen a hosting público primero"
+        }
+    ],
+    "connections": {
+        "RECIBE INFO DE BUSQUEDA": {
+            "main": [
+                [
+                    {
+                        "node": "PREPARA DATOS",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PREPARA DATOS": {
+            "main": [
+                [
+                    {
+                        "node": "THE TALENT MAGNET",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "DIRECTOR OF ART",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Pro Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "THE TALENT MAGNET",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Pro Model 2": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "DIRECTOR OF ART",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "DIRECTOR OF ART": {
+            "main": [
+                [
+                    {
+                        "node": "GENERA IMAGEN VISUAL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "THE TALENT MAGNET": {
+            "main": [
+                [
+                    {
+                        "node": "SPLIT & DISTRIBUTE",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GENERA IMAGEN VISUAL": {
+            "main": [
+                [
+                    {
+                        "node": "SPLIT & DISTRIBUTE",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SPLIT & DISTRIBUTE": {
+            "main": [
+                [
+                    {
+                        "node": "LINKEDIN POST (Autoridad)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "SLACK MSG (Interno)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "GOOGLE SHEETS (Memoria)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "INSTAGRAM (Placeholder)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
