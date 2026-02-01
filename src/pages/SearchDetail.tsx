@@ -49,6 +49,11 @@ export default function SearchDetail() {
     // 🧠 Job Auto-Match Hook (Automatic)
     const { jobMatches } = useJobAutoMatch(id);
 
+    // Wrapper to handle search with immediate parameter
+    const handleSearch = (searchQuery: string, immediate?: boolean) => {
+        setQuery(searchQuery, immediate);
+    };
+
     // Ordenar candidatos por relevancia semántica o score
     const sortedCandidates = useMemo(() => {
         let list = [...candidates];
@@ -342,7 +347,7 @@ export default function SearchDetail() {
                 searchInfo={searchInfo}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
-                onSearch={setQuery}
+                onSearch={handleSearch}
                 isSearching={isSearching}
             />
 
