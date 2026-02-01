@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Code, Clock, MapPin, DollarSign, Languages, Briefcase, LayoutGrid, List } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code, Clock, MapPin, Languages, Briefcase, LayoutGrid, List } from 'lucide-react';
 import { GlassCard } from './ui/GlassCard';
 import { useState } from 'react';
 
@@ -165,19 +165,6 @@ export function SearchInfoHeader({ id, searchInfo, viewMode, setViewMode, onSear
                                         Ubicación
                                     </label>
                                     <p className="text-sm text-[var(--text-main)]">{searchInfo.ubicacion}</p>
-                                </div>
-                            )}
-
-                            {/* Salario */}
-                            {(searchInfo?.salario_min || searchInfo?.salario_max) && (
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-1 text-xs font-medium text-[var(--text-muted)]">
-                                        <DollarSign size={12} className="text-emerald-500" />
-                                        Rango Salarial
-                                    </label>
-                                    <p className="text-sm text-[var(--text-main)]">
-                                        {searchInfo.moneda} {searchInfo.salario_min?.toLocaleString()} - {searchInfo.salario_max?.toLocaleString()}
-                                    </p>
                                 </div>
                             )}
 
