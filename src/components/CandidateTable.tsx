@@ -30,6 +30,7 @@ interface CandidateTableProps {
     onUpdateComment: (id: string, comment: string) => void;
     onSchedule: (id: string) => void;
     onViewCv: (url: string) => void;
+    onRegrade: (id: string) => void;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -45,7 +46,7 @@ const getStatusBadgeVariant = (status: string) => {
 
 const columnHelper = createColumnHelper<Candidate>();
 
-export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv }: CandidateTableProps) {
+export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, onRegrade }: CandidateTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
 
     const columns = [
@@ -107,20 +108,30 @@ export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv }: 
             },
             cell: (info) => {
                 const score = info.getValue();
-                if (!score && score !== 0) return <span className="text-white/30">N/A</span>;
 
                 // Color basado en el score
                 let colorClass = 'text-white/50';
-                if (score >= 80) colorClass = 'text-emerald-400';
-                else if (score >= 60) colorClass = 'text-amber-400';
-                else colorClass = 'text-red-400';
+                if (score && score >= 80) colorClass = 'text-emerald-400';
+                else if (score && score >= 60) colorClass = 'text-amber-400';
+                else if (score) colorClass = 'text-red-400';
 
                 return (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 group/score">
                         <div className={`text-2xl font-bold ${colorClass}`}>
-                            {score}
+                            {score ?? 'N/A'}
                         </div>
                         <div className="text-xs text-white/30">/100</div>
+
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onRegrade(info.row.original.id);
+                            }}
+                            className="opacity-0 group-hover/score:opacity-100 p-1 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white"
+                            title="Recalcular con IA"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 16h5v5" /></svg>
+                        </button>
                     </div>
                 );
             },

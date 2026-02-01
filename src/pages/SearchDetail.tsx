@@ -7,6 +7,7 @@ import { KanbanBoard } from '../components/KanbanBoard';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { useToast } from '../contexts/ToastContext';
 import { SearchInfoHeader } from '../components/SearchInfoHeader';
+import { triggerGradingWorkflow } from '../lib/n8nWebhook';
 
 interface BusquedaInfo {
     titulo: string;
@@ -238,6 +239,32 @@ export default function SearchDetail() {
         }
     };
 
+    const handleRegrade = async (candidateId: string) => {
+        if (!id) return;
+        const candidate = candidates.find(c => c.id === candidateId);
+        if (!candidate || !candidate.cv_text_or_url) {
+            addToast('No se puede analizar este candidato (falta CV)', 'error');
+            return;
+        }
+
+        addToast('🤖 Iniciando análisis con IA (Prompt mejorado)...', 'success');
+
+        try {
+            await triggerGradingWorkflow({
+                jobId: id,
+                candidate: {
+                    nombre: candidate.nombre,
+                    email: candidate.email,
+                    cv_text_or_url: candidate.cv_text_or_url,
+                }
+            });
+            // Result is handled via Supabase Realtime (update event)
+        } catch (error) {
+            console.error('Regrade error:', error);
+            addToast('Error al invocar el agente de IA', 'error');
+        }
+    };
+
 
     if (loading) return (
         <div className="p-10 text-center text-[var(--text-muted)] animate-pulse">
@@ -269,6 +296,7 @@ export default function SearchDetail() {
                         onUpdateComment={handleUpdateComment}
                         onSchedule={handleOpenSchedule}
                         onViewCv={(url) => setSelectedCv(url)}
+                        onRegrade={handleRegrade}
                     />
                 </div>
             )}

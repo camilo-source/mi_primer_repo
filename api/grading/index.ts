@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 // @ts-ignore
 import pdf from 'pdf-parse';
+import { GRADING_RUBRIC } from './rubric.js';
 
 // Config
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -43,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 1. Fetch Job Description
         const { data: job, error: jobError } = await supabase
             .from('busquedas')
-            .select('titulo, habilidades_requeridas, descripcion, empresa')
+            .select('titulo, habilidades_requeridas, descripcion, empresa, requisitos_excluyentes, modalidad, ubicacion')
             .eq('id_busqueda_n8n', jobId)
             .single();
 
@@ -71,33 +72,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             cvText = candidate.cv_text_or_url; // Assume it's text
         }
 
-        // Truncate CV text to avoid token limits (approx 10k chars should be enough)
-        const truncatedCv = cvText.substring(0, 15000);
+        // Truncate CV text to avoid token limits
+        const truncatedCv = cvText.substring(0, 20000);
 
         // 3. Prompt Gemini
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        // Using "gemini-1.5-flash" for speed, or "pro" for depth. Let's use Pro for "High Standard"
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
         const prompt = `
-            ROLE: Expert Technical Recruiter & Talent Analyst.
-            TASK: Analyze the candidate's CV against the Job Description.
+            ROLE: Expert Technical Recruiter using a strict Grading Rubric.
+            
+            INPUT CONTEXT (THE RUBRIC):
+            ${GRADING_RUBRIC}
 
             JOB DETAILS:
             - Title: ${job.titulo}
             - Company: ${job.empresa}
-            - Required Skills: ${job.habilidades_requeridas?.join(', ')}
+            - Location: ${job.ubicacion || 'Not specified'}
+            - Mode: ${job.modalidad || 'Not specified'}
+            - Hard Skills: ${job.habilidades_requeridas?.join(', ')}
+            - Must Haves: ${job.requisitos_excluyentes?.join(', ') || 'None'}
             - Description: ${job.descripcion || 'N/A'}
 
             CANDIDATE CV:
             ${truncatedCv}
 
+            INSTRUCTIONS:
+            1. Analyze the CV against the Job Description using the RUBRIC.
+            2. Calculate the score for each pillar (Technical, Experience, Soft Skills, Relevance).
+            3. Sum them up for the Total Score.
+            4. Provide a structured output.
+
             OUTPUT FORMAT (JSON ONLY):
             {
                 "score": (0-100 integer),
-                "reasoning": "Concise executive summary explaining the score (max 2 sentences).",
-                "strengths": ["List", "of", "3", "key", "strengths"],
-                "gaps": ["List", "of", "weaknesses" or "missing skills"],
-                "interview_questions": ["3 strategic questions to verify skills"]
+                "reasoning": "A concise executive summary (max 3 sentences).",
+                "analysis": {
+                    "technical_score": (0-40),
+                    "experience_score": (0-30),
+                    "soft_skills_score": (0-15),
+                    "relevance_score": (0-15)
+                },
+                "strengths": ["Point 1", "Point 2", "Point 3"],
+                "gaps": ["Weakness 1", "Weakness 2", "Weakness 3"]
             }
         `;
 
@@ -112,12 +130,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const aiData = JSON.parse(textOutput);
 
+        // Format the summary to be readable in the current UI (which expects a string)
+        const richSummary = `
+${aiData.reasoning}
+
+✅ Strengths:
+${aiData.strengths.map((s: string) => `• ${s}`).join('\n')}
+
+⚠️ Gaps:
+${aiData.gaps.map((s: string) => `• ${s}`).join('\n')}
+        `.trim();
+
         // 4. Update Database
         const { error: updateError } = await supabase
             .from('postulantes')
             .update({
                 score_ia: aiData.score,
-                resumen_ia: aiData.reasoning,
+                resumen_ia: richSummary, // We save the rich text here
                 estado: 'clasificado'
             })
             .eq('id_busqueda_n8n', jobId)
