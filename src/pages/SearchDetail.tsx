@@ -51,6 +51,7 @@ export default function SearchDetail() {
 
     // Wrapper to handle search with immediate parameter
     const handleSearch = (searchQuery: string, immediate?: boolean) => {
+        console.log('[SearchDetail] handleSearch called:', { searchQuery, immediate, type: typeof searchQuery });
         setQuery(searchQuery, immediate);
     };
 

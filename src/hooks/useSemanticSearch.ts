@@ -18,7 +18,8 @@ export function useSemanticSearch(jobId?: string) {
     const [error, setError] = useState<string | null>(null);
 
     const performSearch = async (searchTerm: string) => {
-        if (!searchTerm.trim()) {
+        // Validate input is a string
+        if (typeof searchTerm !== 'string' || !searchTerm.trim()) {
             setResults([]);
             return;
         }
@@ -62,10 +63,13 @@ export function useSemanticSearch(jobId?: string) {
     const debouncedSearch = useDebounce((term: string) => performSearch(term), 600);
 
     const handleSearchInput = (value: string, immediate = false) => {
+        console.log('[useSemanticSearch] handleSearchInput called:', { value, immediate, type: typeof value });
         setQuery(value);
         if (immediate) {
+            console.log('[useSemanticSearch] Triggering immediate search');
             performSearch(value);
         } else {
+            console.log('[useSemanticSearch] Triggering debounced search');
             debouncedSearch(value);
         }
     };

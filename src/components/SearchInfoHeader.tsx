@@ -33,6 +33,7 @@ export function SearchInfoHeader({ id, searchInfo, viewMode, setViewMode, onSear
     const [searchInput, setSearchInput] = useState('');
 
     const handleSearch = () => {
+        console.log('[SearchInfoHeader] handleSearch clicked:', { searchInput, type: typeof searchInput });
         onSearch(searchInput, true); // immediate search
     };
 
