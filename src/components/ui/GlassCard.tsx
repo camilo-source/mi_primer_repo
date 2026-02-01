@@ -41,7 +41,7 @@ export const GlassCard = ({
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50" />
 
             {/* Content */}
-            <div className="relative z-10">
+            <div className="relative z-10 h-full">
                 {children}
             </div>
 
