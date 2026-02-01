@@ -28,16 +28,13 @@ export function useSemanticSearch(jobId?: string) {
         setError(null);
 
         try {
-            // 1. Generate embedding using our API (Gemini)
-            const response = await fetch('/api/embed-query', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: searchTerm })
-            });
+            // 1. Generate embedding using client-side function (works in dev and prod)
+            const { generateEmbedding } = await import('../lib/embeddings');
+            const embedding = await generateEmbedding(searchTerm);
 
-            if (!response.ok) throw new Error('Failed to generate embedding');
-
-            const { embedding } = await response.json();
+            if (!embedding) {
+                throw new Error('Failed to generate embedding');
+            }
 
             // 2. Call Supabase RPC
             const { data, error: rpcError } = await supabase.rpc('match_candidates', {

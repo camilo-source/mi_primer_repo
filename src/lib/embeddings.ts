@@ -38,3 +38,30 @@ export async function generateJobEmbedding(
         return null;
     }
 }
+
+/**
+ * Generate embedding for any text (search queries, candidate CVs, etc.)
+ */
+export async function generateEmbedding(text: string): Promise<number[] | null> {
+    if (!GEMINI_API_KEY) {
+        console.error('[generateEmbedding] VITE_GEMINI_API_KEY not configured');
+        return null;
+    }
+
+    try {
+        console.log('[generateEmbedding] Generating embedding for:', text.substring(0, 100) + '...');
+
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+
+        const result = await model.embedContent(text);
+        const embedding = result.embedding.values;
+
+        console.log('[generateEmbedding] Embedding generated, dimension:', embedding.length);
+
+        return embedding;
+    } catch (error) {
+        console.error('[generateEmbedding] Error:', error);
+        return null;
+    }
+}
