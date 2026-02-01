@@ -242,7 +242,9 @@ export default function SearchDetail() {
     const handleRegrade = async (candidateId: string) => {
         if (!id) return;
         const candidate = candidates.find(c => c.id === candidateId);
-        if (!candidate || !candidate.cv_text_or_url) {
+        const cvSource = candidate?.cv_url || candidate?.cv_text_or_url;
+
+        if (!candidate || !cvSource) {
             addToast('No se puede analizar este candidato (falta CV)', 'error');
             return;
         }
@@ -255,7 +257,7 @@ export default function SearchDetail() {
                 candidate: {
                     nombre: candidate.nombre,
                     email: candidate.email,
-                    cv_text_or_url: candidate.cv_text_or_url,
+                    cv_text_or_url: cvSource,
                 }
             });
             // Result is handled via Supabase Realtime (update event)
