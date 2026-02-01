@@ -30,6 +30,22 @@ interface SearchInfoHeaderProps {
 
 export function SearchInfoHeader({ id, searchInfo, viewMode, setViewMode, onSearch, isSearching }: SearchInfoHeaderProps) {
     const [showRequirements, setShowRequirements] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+
+    const handleSearch = () => {
+        onSearch(searchInput);
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
+    const handleClear = () => {
+        setSearchInput('');
+        onSearch('');
+    };
 
     return (
         <GlassCard className="relative overflow-hidden w-full">
@@ -49,12 +65,38 @@ export function SearchInfoHeader({ id, searchInfo, viewMode, setViewMode, onSear
                         </div>
                         <input
                             type="text"
+                            value={searchInput}
                             placeholder="✨ Búsqueda Semántica: 'Experto en React que sepa liderar'..."
-                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 focus:bg-black/40 transition-all font-medium backdrop-blur-sm"
-                            onChange={(e) => onSearch(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-32 text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 focus:bg-black/40 transition-all font-medium backdrop-blur-sm"
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyPress={handleKeyPress}
                         />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-mono border border-white/5 px-2 py-0.5 rounded">
-                            AI POWERED
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            {searchInput && (
+                                <button
+                                    onClick={handleClear}
+                                    className="text-white/40 hover:text-white/80 transition-colors px-2"
+                                    title="Limpiar búsqueda"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                            <button
+                                onClick={handleSearch}
+                                disabled={!searchInput.trim() || isSearching}
+                                className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/30 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                            >
+                                {isSearching ? (
+                                    <>
+                                        <div className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full" />
+                                        Buscando...
+                                    </>
+                                ) : (
+                                    <>
+                                        🔍 Buscar
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
 
