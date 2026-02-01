@@ -24,7 +24,7 @@ interface SearchInfoHeaderProps {
     searchInfo: BusquedaInfo | null;
     viewMode: 'table' | 'kanban';
     setViewMode: (mode: 'table' | 'kanban') => void;
-    onSearch: (query: string) => void;
+    onSearch: (query: string, immediate?: boolean) => void;
     isSearching: boolean;
 }
 
@@ -33,7 +33,7 @@ export function SearchInfoHeader({ id, searchInfo, viewMode, setViewMode, onSear
     const [searchInput, setSearchInput] = useState('');
 
     const handleSearch = () => {
-        onSearch(searchInput);
+        onSearch(searchInput, true); // immediate search
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {

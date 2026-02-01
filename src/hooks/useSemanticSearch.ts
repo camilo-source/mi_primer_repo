@@ -61,9 +61,13 @@ export function useSemanticSearch(jobId?: string) {
     // Debounce the search wrapper
     const debouncedSearch = useDebounce((term: string) => performSearch(term), 600);
 
-    const handleSearchInput = (value: string) => {
+    const handleSearchInput = (value: string, immediate = false) => {
         setQuery(value);
-        debouncedSearch(value);
+        if (immediate) {
+            performSearch(value);
+        } else {
+            debouncedSearch(value);
+        }
     };
 
     return {
