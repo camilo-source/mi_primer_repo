@@ -15,12 +15,16 @@ INSERT INTO busquedas (
     )
 VALUES (
         'demo-semantic-search-001',
-        (
-            SELECT user_id
-            FROM clientes
-            LIMIT 1
-        ), -- Use first client
-        'Senior Full Stack Developer', 'Buscamos un desarrollador full stack con experiencia en React, Node.js y bases de datos. Debe tener capacidad de liderazgo y trabajo en equipo.', ARRAY ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Docker'], 5, 10, 'remoto', 'Buenos Aires, Argentina', 'active'
+        auth.uid(),
+        -- Use current logged-in user
+        'Senior Full Stack Developer',
+        'Buscamos un desarrollador full stack con experiencia en React, Node.js y bases de datos. Debe tener capacidad de liderazgo y trabajo en equipo.',
+        ARRAY ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Docker'],
+        5,
+        10,
+        'remoto',
+        'Buenos Aires, Argentina',
+        'active'
     ) ON CONFLICT (id_busqueda_n8n) DO NOTHING;
 -- Insert 20 diverse candidates with different profiles
 INSERT INTO postulantes (
