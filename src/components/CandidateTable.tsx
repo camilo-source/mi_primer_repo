@@ -11,6 +11,7 @@ import { ArrowUpDown, Mail, MessageSquare, Calendar, FileText } from 'lucide-rea
 import { Badge } from './ui/Badge';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
+import { SmartInsights } from './SmartInsights';
 
 export interface Candidate {
     id: string;
@@ -24,6 +25,12 @@ export interface Candidate {
     booking_token?: string;
     cv_text_or_url?: string;
     cv_url?: string;
+    analisis_json?: {
+        technical_score: number;
+        experience_score: number;
+        soft_skills_score: number;
+        relevance_score: number;
+    };
 }
 
 interface CandidateTableProps {
@@ -32,6 +39,7 @@ interface CandidateTableProps {
     onSchedule: (id: string) => void;
     onViewCv: (url: string) => void;
     onRegrade: (id: string) => void;
+    jobMatches?: Array<{ id: string; similarity: number }>;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -47,8 +55,11 @@ const getStatusBadgeVariant = (status: string) => {
 
 const columnHelper = createColumnHelper<Candidate>();
 
-export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, onRegrade }: CandidateTableProps) {
+export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, onRegrade, jobMatches }: CandidateTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
+
+    // Create a map for quick job match lookup
+    const jobMatchMap = new Map(jobMatches?.map(m => [m.id, m.similarity]) || []);
 
     const columns = [
         columnHelper.accessor('nombre', {
@@ -89,6 +100,38 @@ export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, on
                 );
             },
         }),
+        // Job Match % Column
+        columnHelper.display({
+            id: 'job_match',
+            header: () => (
+                <div className="text-center">
+                    <span className="text-xs">Job Match</span>
+                </div>
+            ),
+            cell: (info) => {
+                const candidateId = info.row.original.id;
+                const matchScore = jobMatchMap.get(candidateId);
+
+                if (!matchScore || matchScore === 0) return null;
+
+                const percentage = Math.round(matchScore * 100);
+
+                // Color based on match percentage
+                let colorClass = 'text-white/30 bg-white/5';
+                if (percentage >= 80) colorClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                else if (percentage >= 60) colorClass = 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+                else if (percentage >= 40) colorClass = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+
+                return (
+                    <div className="flex justify-center">
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold border ${colorClass}`} title="Relevancia semántica con el puesto">
+                            {percentage}%
+                        </div>
+                    </div>
+                );
+            },
+            size: 80,
+        }),
         columnHelper.accessor('email', {
             header: 'Email',
             cell: (info) => (
@@ -112,6 +155,7 @@ export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, on
             },
             cell: (info) => {
                 const score = info.getValue();
+                const analysis = info.row.original.analisis_json;
 
                 // Color basado en el score
                 let colorClass = 'text-white/50';
@@ -120,11 +164,20 @@ export function CandidateTable({ data, onUpdateComment, onSchedule, onViewCv, on
                 else if (score) colorClass = 'text-red-400';
 
                 return (
-                    <div className="flex items-center gap-2 group/score">
-                        <div className={`text-2xl font-bold ${colorClass}`}>
+                    <div className="flex items-center gap-2 group/score relative">
+                        <div className={`text-2xl font-bold ${colorClass} cursor-help`}>
                             {score ?? 'N/A'}
                         </div>
                         <div className="text-xs text-white/30">/100</div>
+
+                        {/* Smart Insights Popover (Radar Chart) */}
+                        {analysis && (
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 opacity-0 group-hover/score:opacity-100 invisible group-hover/score:visible transition-all duration-300 z-50 pointer-events-none scale-95 group-hover/score:scale-100 origin-bottom">
+                                <SmartInsights analysis={analysis} />
+                                {/* Arrow */}
+                                <div className="w-4 h-4 bg-black/80 border-r border-b border-emerald-500/30 transform rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-2"></div>
+                            </div>
+                        )}
 
                         <button
                             onClick={(e) => {

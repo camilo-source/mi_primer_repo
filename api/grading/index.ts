@@ -75,62 +75,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Truncate CV text to avoid token limits
         const truncatedCv = cvText.substring(0, 20000);
 
-        // 3. Prompt Gemini
+        // 3. Parallel Processing: Generate Embedding & Grade Candidate
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        // Using "gemini-1.5-flash" for speed, or "pro" for depth. Let's use Pro for "High Standard"
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const gradingModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
 
+        console.log('[Grading API] Starting Parallel AI Processing (Grading + Embedding)...');
+
+        // A. Generate Prompt
         const prompt = `
-            ROLE: Expert Technical Recruiter using a strict Grading Rubric.
+            ROLE: Expert Technical Recruiter & Forensic CV Analyst.
             
             INPUT CONTEXT (THE RUBRIC):
             ${GRADING_RUBRIC}
 
             JOB DETAILS:
             - Title: ${job.titulo}
-            - Company: ${job.empresa}
-            - Location: ${job.ubicacion || 'Not specified'}
-            - Mode: ${job.modalidad || 'Not specified'}
+            - Description: ${job.descripcion || 'N/A'}
             - Hard Skills: ${job.habilidades_requeridas?.join(', ')}
             - Must Haves: ${job.requisitos_excluyentes?.join(', ') || 'None'}
-            - Description: ${job.descripcion || 'N/A'}
 
             CANDIDATE CV:
             ${truncatedCv}
 
             INSTRUCTIONS:
-            1. Analyze the CV against the Job Description using the RUBRIC.
-            2. Calculate the score for each pillar (Technical, Experience, Soft Skills, Relevance).
-            3. Sum them up for the Total Score.
-            4. Provide a structured output.
+            1. **Chain of Thought Analysis**: detection of key claims, verification of dates, and skill matching.
+            2. **Evidence Extraction**: Find quotes that prove the candidate has the skills.
+            3. **Anomaly Detection**: Look for logical inconsistencies (e.g., "Senior" with 1 year exp, overlapping dates that don't make sense).
+            4. **Scoring**: Apply the rubric strictly.
+            5. **Interview Prep**: Generate 3 hard technical/behavioral questions based on their WEAKNESSES.
 
             OUTPUT FORMAT (JSON ONLY):
             {
                 "score": (0-100 integer),
-                "reasoning": "A concise executive summary (max 3 sentences).",
+                "reasoning": "Concise executive summary.",
                 "analysis": {
                     "technical_score": (0-40),
                     "experience_score": (0-30),
                     "soft_skills_score": (0-15),
                     "relevance_score": (0-15)
                 },
-                "strengths": ["Point 1", "Point 2", "Point 3"],
-                "gaps": ["Weakness 1", "Weakness 2", "Weakness 3"]
+                "strengths": ["Strong point 1", "Strong point 2"],
+                "gaps": ["Weakness 1", "Weakness 2"],
+                "anomalies": ["Anomaly 1" or null],
+                "interview_questions": ["Question 1", "Question 2", "Question 3"]
             }
         `;
 
-        console.log('[Grading API] Sending prompt to Gemini...');
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-        });
+        // B. Execute Parallel Calls
+        const [gradingResult, embeddingResult] = await Promise.all([
+            gradingModel.generateContent({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            }),
+            embeddingModel.embedContent(truncatedCv.substring(0, 9000)) // Limit for embedding model
+        ]);
 
-        const textOutput = result.response.text();
+        // C. Process Grading Result
+        const textOutput = gradingResult.response.text();
         console.log('[Grading API] AI Response:', textOutput);
-
         const aiData = JSON.parse(textOutput);
 
-        // Format the summary to be readable in the current UI (which expects a string)
+        // D. Process Embedding Result
+        const embeddingValues = embeddingResult.embedding.values;
+        console.log('[Grading API] Embedding Generated. Dimensions:', embeddingValues.length);
+
+        // E. Format Rich Summary
         const richSummary = `
 ${aiData.reasoning}
 
@@ -139,6 +149,10 @@ ${aiData.strengths.map((s: string) => `• ${s}`).join('\n')}
 
 ⚠️ Gaps:
 ${aiData.gaps.map((s: string) => `• ${s}`).join('\n')}
+
+${aiData.anomalies && aiData.anomalies.length > 0 ? `🚩 Anomalies Detected:\n${aiData.anomalies.map((s: string) => `• ${s}`).join('\n')}\n` : ''}
+🎤 Suggested Interview Questions:
+${aiData.interview_questions.map((q: string) => `• ${q}`).join('\n')}
         `.trim();
 
         // 4. Update Database
@@ -146,8 +160,10 @@ ${aiData.gaps.map((s: string) => `• ${s}`).join('\n')}
             .from('postulantes')
             .update({
                 score_ia: aiData.score,
-                resumen_ia: richSummary, // We save the rich text here
-                estado: 'clasificado'
+                resumen_ia: richSummary,
+                analisis_json: aiData, // Save raw JSON for Radar Chart
+                estado: 'clasificado',
+                embedding: embeddingValues
             })
             .eq('id_busqueda_n8n', jobId)
             .eq('email', candidate.email);

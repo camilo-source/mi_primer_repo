@@ -8,6 +8,8 @@ import { ScheduleModal } from '../components/ScheduleModal';
 import { useToast } from '../contexts/ToastContext';
 import { SearchInfoHeader } from '../components/SearchInfoHeader';
 import { triggerGradingWorkflow } from '../lib/n8nWebhook';
+import { useSemanticSearch } from '../hooks/useSemanticSearch';
+import { useJobAutoMatch } from '../hooks/useJobAutoMatch';
 
 interface BusquedaInfo {
     titulo: string;
@@ -41,12 +43,41 @@ export default function SearchDetail() {
     const [selectedCandidate, setSelectedCandidate] = useState<{ id: string, name: string } | null>(null);
     const [selectedCv, setSelectedCv] = useState<string | null>(null);
 
-    // Ordenar candidatos por score (mayor a menor)
+    // 🔍 Semantic Search Hook (Manual)
+    const { query, setQuery, results, isSearching } = useSemanticSearch(id);
+
+    // 🧠 Job Auto-Match Hook (Automatic)
+    const { jobMatches } = useJobAutoMatch(id);
+
+    // Ordenar candidatos por relevancia semántica o score
     const sortedCandidates = useMemo(() => {
-        return [...candidates].sort((a, b) => {
-            return (b.score_ia || 0) - (a.score_ia || 0);
-        });
-    }, [candidates]);
+        let list = [...candidates];
+
+        // 1. If manual search is active, use manual search results
+        if (query && results.length > 0) {
+            const similarityMap = new Map(results.map(r => [r.id, r.similarity]));
+            list = list.filter(c => similarityMap.has(c.id));
+            list.sort((a, b) => (similarityMap.get(b.id) || 0) - (similarityMap.get(a.id) || 0));
+        }
+        // 2. If no manual search but we have job auto-match, use job embedding
+        else if (!query && jobMatches.length > 0) {
+            const jobMatchMap = new Map(jobMatches.map(m => [m.id, m.similarity]));
+            list.sort((a, b) => {
+                const simA = jobMatchMap.get(a.id) || 0;
+                const simB = jobMatchMap.get(b.id) || 0;
+                // If both have similarity, sort by that; otherwise fall back to score
+                if (simA > 0 || simB > 0) {
+                    return simB - simA;
+                }
+                return (b.score_ia || 0) - (a.score_ia || 0);
+            });
+        }
+        // 3. Default: Sort by AI Score
+        else {
+            list.sort((a, b) => (b.score_ia || 0) - (a.score_ia || 0));
+        }
+        return list;
+    }, [candidates, results, query, jobMatches]);
 
     useEffect(() => {
         if (id) fetchData();
@@ -311,6 +342,8 @@ export default function SearchDetail() {
                 searchInfo={searchInfo}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
+                onSearch={setQuery}
+                isSearching={isSearching}
             />
 
             {/* Candidates View */}
@@ -328,6 +361,7 @@ export default function SearchDetail() {
                         onSchedule={handleOpenSchedule}
                         onViewCv={(url) => setSelectedCv(url)}
                         onRegrade={handleRegrade}
+                        jobMatches={jobMatches}
                     />
                 </div>
             )}

@@ -197,7 +197,39 @@ export function useSearchForm() {
                 throw error;
             }
 
-            addToast('¡Búsqueda creada! Generando publicación...', 'success');
+            addToast('¡Búsqueda creada! Generando contexto semántico...', 'success');
+
+            // 🧠 Generate Job Embedding for Semantic Context
+            try {
+                setStatusMessage('Generando contexto semántico...');
+                const embeddingResponse = await fetch('/api/embed-job', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo: formData.titulo,
+                        descripcion: formData.descripcion,
+                        habilidades_requeridas: formData.habilidades_requeridas
+                    })
+                });
+
+                if (embeddingResponse.ok) {
+                    const { embedding } = await embeddingResponse.json();
+
+                    // Save embedding to database
+                    await supabase
+                        .from('busquedas')
+                        .update({ embedding })
+                        .eq('id_busqueda_n8n', searchId);
+
+                    console.log('[SearchNew] Job embedding saved successfully');
+                } else {
+                    console.warn('[SearchNew] Failed to generate job embedding, continuing anyway');
+                }
+            } catch (embeddingError) {
+                console.error('[SearchNew] Embedding generation error:', embeddingError);
+                // Non-critical, continue with job creation
+            }
+
 
             // Trigger n8n webhook
             setStatusMessage('Conectando con Agentes IA...');
