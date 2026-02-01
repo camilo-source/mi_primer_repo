@@ -36,15 +36,49 @@ export function useSemanticSearch(jobId?: string) {
                 throw new Error('Failed to generate embedding');
             }
 
-            // 2. Call Supabase RPC
+            // 2. Call Supabase RPC for semantic search
             const { data, error: rpcError } = await supabase.rpc('match_candidates', {
                 query_embedding: embedding,
-                match_threshold: 0.4, // Threshold can be tuned
-                match_count: 10,
+                match_threshold: 0.2, // Lower threshold for more results
+                match_count: 20,
                 search_job_id: jobId || null
             });
 
-            if (rpcError) throw rpcError;
+            if (rpcError) {
+                console.error('[useSemanticSearch] RPC error:', rpcError);
+                throw rpcError;
+            }
+
+            console.log('[useSemanticSearch] RPC results:', data);
+
+            // If no semantic results, fall back to text search
+            if (!data || data.length === 0) {
+                console.log('[useSemanticSearch] No semantic results, trying text fallback');
+
+                // Simple text-based search as fallback
+                const { data: textResults, error: textError } = await supabase
+                    .from('postulantes')
+                    .select('*')
+                    .eq('id_busqueda_n8n', jobId)
+                    .or(`nombre.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,resumen_ia.ilike.%${searchTerm}%,cv_texto_extraido.ilike.%${searchTerm}%`)
+                    .limit(10);
+
+                if (textError) throw textError;
+
+                // Convert to semantic search format
+                const convertedResults = (textResults || []).map(c => ({
+                    id: c.id,
+                    nombre: c.nombre,
+                    email: c.email,
+                    cv_text_or_url: c.cv_texto_extraido || '',
+                    score_ia: c.score_ia || 0,
+                    similarity: 0.5 // Give moderate similarity for text matches
+                }));
+
+                setResults(convertedResults);
+                console.log('[useSemanticSearch] Text fallback results:', convertedResults.length);
+                return;
+            }
 
             setResults(data || []);
 
