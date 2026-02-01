@@ -1,56 +1,23 @@
--- Demo: Populate database with diverse candidates for semantic search testing
+-- Demo: Add 20 diverse candidates to an EXISTING job search
 -- 
--- IMPORTANT: Before running this script, get your user_id by running:
--- SELECT id FROM auth.users LIMIT 1;
--- 
--- Then replace 'YOUR_USER_ID_HERE' below with your actual user_id
--- 
--- Run this in Supabase SQL Editor after creating a job search
--- Step 1: Ensure user exists in clientes table
-INSERT INTO clientes (user_id, nombre, email)
-SELECT id,
-    COALESCE(raw_user_meta_data->>'name', email),
-    email
-FROM auth.users
-WHERE id = '1b36272a-5285-4e87-8a5a-b995c0845c43' ON CONFLICT (user_id) DO NOTHING;
--- Step 2: Create a demo job if it doesn't exist
-INSERT INTO busquedas (
-        id_busqueda_n8n,
-        user_id,
-        titulo,
-        descripcion,
-        habilidades_requeridas,
-        experiencia_minima,
-        experiencia_maxima,
-        modalidad,
-        ubicacion,
-        estado
-    )
-VALUES (
-        'demo-semantic-search-001',
-        '1b36272a-5285-4e87-8a5a-b995c0845c43'::uuid,
-        'Senior Full Stack Developer',
-        'Buscamos un desarrollador full stack con experiencia en React, Node.js y bases de datos. Debe tener capacidad de liderazgo y trabajo en equipo.',
-        ARRAY ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Docker'],
-        5,
-        10,
-        'remoto',
-        'Buenos Aires, Argentina',
-        'active'
-    ) ON CONFLICT (id_busqueda_n8n) DO NOTHING;
+-- INSTRUCTIONS:
+-- 1. Go to your dashboard and find the id_busqueda_n8n of an existing job
+-- 2. Replace '5b2de542-443a-41a1-addd-c18279537613' below with that id
+-- 3. Run this script in Supabase SQL Editor
+--
 -- Insert 20 diverse candidates with different profiles
 INSERT INTO postulantes (
         id_busqueda_n8n,
         nombre,
         email,
-        cv_text_or_url,
+        cv_texto_extraido,
         resumen_ia,
         score_ia,
         estado_agenda
     )
 VALUES -- Perfect matches (80-95 score)
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'María González',
         'maria.gonzalez@email.com',
         'CV: 8 años de experiencia en desarrollo full stack. Experta en React, Node.js, TypeScript y PostgreSQL. Lideró equipos de 5 personas. Proyectos: E-commerce con 1M usuarios, Sistema bancario, App de salud. Certificaciones: AWS Solutions Architect, Scrum Master.',
@@ -59,7 +26,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Carlos Rodríguez',
         'carlos.rodriguez@email.com',
         'CV: 7 años como Full Stack Developer. Stack principal: React, Node.js, Express, MongoDB, Docker. Arquitectura de microservicios. Liderazgo técnico en startup fintech. Inglés fluido. Contribuidor open source.',
@@ -68,7 +35,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Ana Martínez',
         'ana.martinez@email.com',
         'CV: 6 años de experiencia. Especialista en React y TypeScript. Backend con Node.js y GraphQL. Bases de datos PostgreSQL y Redis. Trabajo remoto desde hace 4 años. Excelente comunicación.',
@@ -78,7 +45,7 @@ VALUES -- Perfect matches (80-95 score)
     ),
     -- Good matches (65-79 score)
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Juan Pérez',
         'juan.perez@email.com',
         'CV: 5 años como Frontend Developer. Experto en React, Redux, Next.js. Conocimientos básicos de Node.js. Diseño UI/UX. Trabajó en agencia digital con clientes internacionales.',
@@ -87,7 +54,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Laura Fernández',
         'laura.fernandez@email.com',
         'CV: 4 años de experiencia. Desarrollo full stack con Vue.js y Node.js. Migración a React en último proyecto. PostgreSQL y MongoDB. Metodologías ágiles.',
@@ -96,7 +63,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Diego Silva',
         'diego.silva@email.com',
         'CV: 6 años como Backend Developer. Node.js, Express, NestJS. APIs RESTful y GraphQL. PostgreSQL, MySQL. Docker y Kubernetes. Aprendiendo React.',
@@ -106,7 +73,7 @@ VALUES -- Perfect matches (80-95 score)
     ),
     -- Moderate matches (50-64 score)
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Sofía López',
         'sofia.lopez@email.com',
         'CV: 3 años de experiencia. Desarrollo web con JavaScript vanilla y jQuery. Curso intensivo de React. Proyectos personales con Node.js. Muy motivada para aprender.',
@@ -115,7 +82,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Martín Torres',
         'martin.torres@email.com',
         'CV: 5 años como Mobile Developer. React Native experto. Conocimientos de React web. Backend con Firebase. Interesado en transición a web full stack.',
@@ -124,7 +91,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Valentina Ruiz',
         'valentina.ruiz@email.com',
         'CV: 4 años en QA Automation. Selenium, Cypress, Jest. Conocimientos de JavaScript y TypeScript. Curso de React. Busca transición a desarrollo.',
@@ -134,7 +101,7 @@ VALUES -- Perfect matches (80-95 score)
     ),
     -- Lower matches (30-49 score)
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Roberto Gómez',
         'roberto.gomez@email.com',
         'CV: 2 años como desarrollador. Python y Django principalmente. HTML, CSS, JavaScript básico. Curso online de React. Sin experiencia profesional en React o Node.js.',
@@ -143,7 +110,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Lucía Morales',
         'lucia.morales@email.com',
         'CV: 3 años como diseñadora UI/UX. HTML y CSS avanzado. JavaScript básico. Bootcamp de desarrollo web. Portfolio con proyectos personales en React.',
@@ -153,7 +120,7 @@ VALUES -- Perfect matches (80-95 score)
     ),
     -- Edge cases and diverse profiles
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Fernando Castro',
         'fernando.castro@email.com',
         'CV: 10 años como Java Developer. Spring Boot, Hibernate. Microservicios. Reciente transición a JavaScript. 6 meses con Node.js y React en proyecto actual.',
@@ -162,7 +129,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Camila Herrera',
         'camila.herrera@email.com',
         'CV: 4 años como Data Scientist. Python, R, SQL. Dashboards con React. APIs con Flask. Interesada en desarrollo web full stack.',
@@ -171,7 +138,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Andrés Vargas',
         'andres.vargas@email.com',
         'CV: 7 años como DevOps Engineer. Docker, Kubernetes, CI/CD. Scripting con Node.js. Infraestructura como código. Conocimientos de desarrollo web.',
@@ -180,7 +147,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Gabriela Sánchez',
         'gabriela.sanchez@email.com',
         'CV: 5 años como Product Manager. Background técnico en desarrollo. 2 años como developer (React, Node.js). Liderazgo de equipos técnicos.',
@@ -189,7 +156,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Pablo Ramírez',
         'pablo.ramirez@email.com',
         'CV: 6 años como Full Stack Developer. Angular, .NET Core, SQL Server. Proyecto reciente con React y Node.js (6 meses). Adaptabilidad a nuevas tecnologías.',
@@ -198,7 +165,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Carolina Díaz',
         'carolina.diaz@email.com',
         'CV: 8 años como desarrolladora. Especialista en accesibilidad web. React, TypeScript. Node.js para tooling. Conferencias internacionales. Open source contributor.',
@@ -207,7 +174,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Javier Ortiz',
         'javier.ortiz@email.com',
         'CV: 3 años como freelancer. Proyectos variados con React, Vue, Svelte. Backend con Node.js y Supabase. E-commerce, landing pages, dashboards.',
@@ -216,7 +183,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Daniela Flores',
         'daniela.flores@email.com',
         'CV: 5 años en desarrollo. React Native y React Web. Redux, Context API. Backend con Firebase y Node.js. Apps publicadas en App Store y Play Store.',
@@ -225,7 +192,7 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     ),
     (
-        'demo-semantic-search-001',
+        '5b2de542-443a-41a1-addd-c18279537613',
         'Sebastián Méndez',
         'sebastian.mendez@email.com',
         'CV: 9 años como Tech Lead. Arquitectura de software. React, Node.js, microservicios. Mentoría de equipos. Migración de sistemas legacy. Inglés nativo.',
@@ -234,4 +201,4 @@ VALUES -- Perfect matches (80-95 score)
         'pending'
     );
 -- Success message
-SELECT 'Demo data inserted successfully! 20 candidates added to job: demo-semantic-search-001' as message;
+SELECT '✅ Demo data inserted successfully! 20 candidates added to your job.' as message;
