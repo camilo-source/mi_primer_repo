@@ -143,6 +143,35 @@ export default function SearchDetail() {
 
             if (candidatesError) throw candidatesError;
             setCandidates(candidatesData || []);
+
+            // 🤖 AUTO-GRADING CHECK
+            // If we find candidates with CV but no score, trigger analysis
+            const unprocessed = (candidatesData || []).filter(c =>
+                !c.score_ia &&
+                !c.resumen_ia &&
+                (c.cv_url || c.cv_text_or_url)
+            );
+
+            if (unprocessed.length > 0) {
+                console.log('🤖 Auto-triggering grading for:', unprocessed.length, 'candidates');
+                unprocessed.forEach(c => {
+                    const cvSource = c.cv_url || c.cv_text_or_url;
+                    if (cvSource) {
+                        triggerGradingWorkflow({
+                            jobId: id,
+                            candidate: {
+                                nombre: c.nombre,
+                                email: c.email,
+                                cv_text_or_url: cvSource,
+                            }
+                        }).catch(err => console.error('Auto-grade failed for', c.nombre, err));
+                    }
+                });
+
+                if (unprocessed.length > 0) {
+                    addToast(`🤖 Analizando ${unprocessed.length} candidatos nuevos...`, 'default');
+                }
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
             addToast('Error al cargar los datos', 'error');

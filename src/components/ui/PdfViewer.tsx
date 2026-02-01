@@ -14,7 +14,7 @@ export function PdfViewer({ url, onClose, title = 'Documento' }: PdfViewerProps)
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <GlassCard className="w-full max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden relative">
+            <GlassCard className="w-full max-w-6xl h-[92vh] flex flex-col p-0 overflow-hidden relative">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/20 backdrop-blur-md">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
