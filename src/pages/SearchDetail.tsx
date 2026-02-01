@@ -352,6 +352,32 @@ export default function SearchDetail() {
                 isSearching={isSearching}
             />
 
+            {/* Search Results Indicator */}
+            {query && results.length > 0 && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            🎯 Encontramos <strong>{results.length} candidato{results.length !== 1 ? 's' : ''}</strong> relevante{results.length !== 1 ? 's' : ''} para "{query}"
+                        </p>
+                        <button
+                            onClick={() => handleSearch('', false)}
+                            className="ml-auto text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm underline"
+                        >
+                            Ver todos los candidatos
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {query && results.length === 0 && !isSearching && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
+                    <p className="text-amber-600 dark:text-amber-400 font-medium">
+                        ⚠️ No se encontraron candidatos relevantes para "{query}". Intentá con otros términos.
+                    </p>
+                </div>
+            )}
+
             {/* Candidates View */}
             {viewMode === 'kanban' ? (
                 <KanbanBoard
