@@ -158,7 +158,7 @@ export default function SearchDetail() {
                     const cvSource = c.cv_url || c.cv_text_or_url;
                     if (cvSource) {
                         triggerGradingWorkflow({
-                            jobId: id,
+                            jobId: id!,
                             candidate: {
                                 nombre: c.nombre,
                                 email: c.email,
@@ -169,7 +169,7 @@ export default function SearchDetail() {
                 });
 
                 if (unprocessed.length > 0) {
-                    addToast(`🤖 Analizando ${unprocessed.length} candidatos nuevos...`, 'default');
+                    addToast(`🤖 Analizando ${unprocessed.length} candidatos nuevos...`, 'info');
                 }
             }
         } catch (error) {
