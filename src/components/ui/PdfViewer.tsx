@@ -38,10 +38,10 @@ export function PdfViewer({ url, onClose, title = 'Documento' }: PdfViewerProps)
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 bg-white/5 relative">
+                <div className="flex-1 w-full h-full bg-white/5 relative overflow-hidden">
                     <iframe
                         src={url}
-                        className="w-full h-full border-0"
+                        className="w-full h-full border-0 block"
                         title={title}
                     />
 
